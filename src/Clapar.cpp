@@ -43,6 +43,12 @@ void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
   checkAndAdd(option);
 }
 
+void Clapar::addFlag(const char* nameShort,
+                     const std::vector<std::string>& beforeThese,
+                     const std::vector<std::string>& afterThese) {
+  addFlag({nameShort, ""}, beforeThese, afterThese);
+}
+
 void Clapar::addOption(const Clapar::OptionNamePair& namePair,
                        const std::type_index type, const std::size_t numArgs,
                        const char vectorArgsDelimiter,
@@ -60,6 +66,15 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
       .val = std::any()};
 
   checkAndAdd(option);
+}
+
+void Clapar::addOption(const char* nameShort, const std::type_index type,
+                       const std::size_t numArgs,
+                       const char vectorArgsDelimiter,
+                       const std::vector<std::string>& beforeThese,
+                       const std::vector<std::string>& afterThese) {
+  addOption({nameShort, ""}, type, numArgs, vectorArgsDelimiter, beforeThese,
+            afterThese);
 }
 
 void Clapar::addFunction(const std::string& argName,

@@ -26,7 +26,15 @@ class Clapar {
   void addFlag(const OptionNamePair& namePair,
                const std::vector<std::string>& beforeThese = {},
                const std::vector<std::string>& afterThese = {});
+  void addFlag(const char* nameShort,
+               const std::vector<std::string>& beforeThese = {},
+               const std::vector<std::string>& afterThese = {});
   void addOption(const OptionNamePair& namePair, const std::type_index type,
+                 const std::size_t numArgs = 1,
+                 const char vectorArgsDelimiter = ',',
+                 const std::vector<std::string>& beforeThese = {},
+                 const std::vector<std::string>& afterThese = {});
+  void addOption(const char* nameShort, const std::type_index type,
                  const std::size_t numArgs = 1,
                  const char vectorArgsDelimiter = ',',
                  const std::vector<std::string>& beforeThese = {},
