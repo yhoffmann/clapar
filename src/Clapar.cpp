@@ -177,17 +177,15 @@ void Clapar::processOption(const std::size_t argIdx,
     exit(CLAPAR_ERR_WRONG_USAGE);
   }
   const std::string& passedValue = args[argIdx + 1];
-
-  std::istringstream ss(passedValue);
   const std::type_index type = option.config.paramOptions.type;
   if (type == Type::STRING) {
-    option.val = convertToAny<std::string>(ss);
+    option.val = convertToAny<std::string>(passedValue);
   } else if (type == Type::BOOL) {
-    option.val = convertToAny<bool>(ss);
+    option.val = convertToAny<bool>(passedValue);
   } else if (type == Type::FLOAT) {
-    option.val = convertToAny<float>(ss);
+    option.val = convertToAny<float>(passedValue);
   } else if (type == Type::DOUBLE) {
-    option.val = convertToAny<double>(ss);
+    option.val = convertToAny<double>(passedValue);
   } else {
     std::cerr << "Could not convert to std::any" << std::endl;
   }

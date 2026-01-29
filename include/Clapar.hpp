@@ -157,9 +157,13 @@ class Clapar {
   void processOption(const std::size_t argIdx,
                      const std::vector<std::string>& args, Option& option);
   template <typename T>
-  std::any convertToAny(std::istringstream& ss) {
+  std::any convertToAny(const std::string& passedValue) {
+    if constexpr (std::is_same_v<T, std::string>) {
+      return std::any(passedValue);
+    }
     T val;
-    if (!(ss >> val) || !ss.eof() || ss.fail()) {
+    std::istringstream iss(passedValue);
+    if (!(iss >> val) || !iss.eof() || iss.fail()) {
       std::cerr
           << "Clapar error: Conversion failed. Wrong type was supplied for the "
              "parsing (for example trying to parse string->float). Exiting!"
