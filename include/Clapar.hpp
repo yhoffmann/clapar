@@ -1,10 +1,10 @@
 #ifndef CLAPAR_HPP_
 #define CLAPAR_HPP_
 
-#define CLAPAR_ERROR_NO_NAME_GIVEN 70
-#define CLAPAR_ERROR_NAME_COLLISION 71
-#define CLAPAR_ERROR_PARSE_FAILED 72
-#define CLAPAR_ERROR_WRONG_USAGE 73
+#define CLAPAR_ERR_NO_NAME_GIVEN 70
+#define CLAPAR_ERR_NAME_COLLISION 71
+#define CLAPAR_ERR_PARSE_FAILED 72
+#define CLAPAR_ERR_WRONG_USAGE 73
 
 #include <any>
 #include <iostream>
@@ -151,7 +151,7 @@ class Clapar {
           << "Clapar error: Conversion failed. Wrong type was supplied for the "
              "parsing (for example trying to parse string->float). Exiting!"
           << std::endl;
-      exit(CLAPAR_ERROR_PARSE_FAILED);
+      exit(CLAPAR_ERR_PARSE_FAILED);
     }
     return std::any(val);
   }

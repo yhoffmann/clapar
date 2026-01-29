@@ -146,7 +146,7 @@ void Clapar::processOption(const std::size_t argIdx,
               << (option.namePair.nameLong != "" ? option.namePair.nameShort
                                                  : option.namePair.nameLong)
               << " needs a passed value but has none. Exiting!" << std::endl;
-    exit(CLAPAR_ERROR_WRONG_USAGE);
+    exit(CLAPAR_ERR_WRONG_USAGE);
   }
   const std::string& passedValue = args[argIdx + 1];
 
