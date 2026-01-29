@@ -114,20 +114,18 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
     if (option->wasProcessed) continue;
     option->wasProcessed = true;
 
-    /* this loop is safe, trust me */
-    for (std::size_t numArgs = args.size(), argIdx = numArgs - 1;
-         argIdx < numArgs; argIdx--) {
+    for (std::size_t argIdx = 0, numArgs = args.size(); argIdx < numArgs;
+         argIdx++) {
       const std::string& arg = args[argIdx];
       const bool isArg = (arg == option->namePair.nameShort ||
                           arg == option->namePair.nameLong);
       if (isArg) {
         processOption(argIdx, args, *option);
-        break; /* matching arg was found: the break means that only the LAST
-                * time an arg is mentioned, it will take effect, which, I
-                * thought, was more intuitive than the other way around;
-                * this does however mean that the function (possibly not a
-                * feature yet) associated with an option will only be ran once
-                * for the last mention */
+        break; /* matching arg was found: break means that we do not look for
+                * the same arg again, meaninig that only the first time an arg
+                * is provided on the command-line, will it be read; all mentions
+                * beyond the first are discarded and the associated function is
+                * called only when the first arg is assigned */
       }
     }
   }
