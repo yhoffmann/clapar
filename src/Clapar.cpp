@@ -31,7 +31,7 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
 void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
                      const std::vector<std::string>& beforeThese,
                      const std::vector<std::string>& afterThese) {
-  const Clapar::Option option = {
+  Clapar::Option option = {
       .namePair = namePair,
       .config = {.isFlag = true,
                  .beforeThese = beforeThese,
@@ -48,7 +48,7 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
                        const char vectorArgsDelimiter,
                        const std::vector<std::string>& beforeThese,
                        const std::vector<std::string>& afterThese) {
-  const Clapar::Option option = {
+  Clapar::Option option = {
       .namePair = namePair,
       .config = {.isFlag = false,
                  .beforeThese = beforeThese,
@@ -74,39 +74,41 @@ void Clapar::parse(int argc, char* argv[]) {
   processArgs(args);
 }
 
-void Clapar::checkAndAdd(const Option& option) {
+void Clapar::checkAndAdd(Option& option) {
   Clapar::OptionNamePair::Validity validity =
       option.namePair.getValidity(m_options);
 
   std::shared_ptr<Option> optionPtr =
       std::make_shared<Option>(std::move(option));
 
+  std::string& nameShort = optionPtr->namePair.nameShort;
+  std::string& nameLong = optionPtr->namePair.nameLong;
   switch (validity) {
-    case OptionNamePair::CollisionWithOther:
-      (*userStream) << ERRMSG_NAME_COLLISION_1 << optionPtr->namePair.nameShort
-                    << "\" and \"" << optionPtr->namePair.nameLong
-                    << ERRMSG_NAME_COLLISION_2 << "\n";
-      exit(CLAPAR_ERROR_NAME_COLLISION);
+    case OptionNamePair::SGiven:
+      nameLong = optionPtr->namePair.nameShort + "Clapar";
+      break;
+
+    case OptionNamePair::BothGiven:
+      break;
+
+    case OptionNamePair::LGiven:
+      nameShort = optionPtr->namePair.nameLong + "Clapar";
       break;
 
     case OptionNamePair::NoneGiven:
       (*userStream) << ERRMSG_NO_NAME_GIVEN << "\n";
-      exit(CLAPAR_ERROR_NO_NAME_GIVEN);
+      exit(CLAPAR_ERR_NO_NAME_GIVEN);
       break;
 
-    case OptionNamePair::LGiven:
-      m_options[optionPtr->namePair.nameLong] = optionPtr;
-      break;
-
-    case OptionNamePair::SGiven:
-      m_options[optionPtr->namePair.nameShort] = optionPtr;
-      break;
-
-    case OptionNamePair::BothGiven:
-      m_options[optionPtr->namePair.nameShort] = optionPtr;
-      m_options[optionPtr->namePair.nameLong] = optionPtr;
+    case OptionNamePair::CollisionWithOther:
+      (*userStream) << ERRMSG_NAME_COLLISION_1 << optionPtr->namePair.nameShort
+        << "\" and \"" << optionPtr->namePair.nameLong
+        << ERRMSG_NAME_COLLISION_2 << "\n";
+      exit(CLAPAR_ERR_NAME_COLLISION);
       break;
   }
+  m_options[nameShort] = optionPtr;
+  m_options[nameLong] = optionPtr;
 }
 
 void Clapar::processArgs(const std::vector<std::string>& args) {

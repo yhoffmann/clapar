@@ -139,7 +139,7 @@ class Clapar {
   static constexpr const char* const ERRMSG_NAME_COLLISION_2 =
       "\") was assigned to two options. Exiting!";
 
-  void checkAndAdd(const Option& option);
+  void checkAndAdd(Option& option);
   void processArgs(const std::vector<std::string>& args);
   void processOption(const std::size_t argIdx,
                      const std::vector<std::string>& args, Option& option);
