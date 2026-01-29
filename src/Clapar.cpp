@@ -62,6 +62,19 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
   checkAndAdd(option);
 }
 
+void Clapar::addFunction(const std::string& argName,
+                         const std::function<void(void)> func) {
+  if (m_options.contains(argName)) {
+    Option& option = *m_options[argName];
+    option.func = func;
+  } else {
+    std::cerr << "Clapar error: Tried assigning function to argument that does "
+                 "not exist. Exiting!"
+              << std::endl;
+    exit(CLAPAR_ERR_NO_SUCH_ARGUMENT);
+  }
+}
+
 void Clapar::parse(int argc, char* argv[]) {
   m_argv0 = argv[0];
   const std::vector<std::string> args = [argc, argv]() {
@@ -163,4 +176,5 @@ void Clapar::processOption(const std::size_t argIdx,
   } else {
     std::cerr << "Could not convert to std::any" << std::endl;
   }
+  option.func();
 }

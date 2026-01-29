@@ -5,8 +5,10 @@
 #define CLAPAR_ERR_NAME_COLLISION 71
 #define CLAPAR_ERR_PARSE_FAILED 72
 #define CLAPAR_ERR_WRONG_USAGE 73
+#define CLAPAR_ERR_NO_SUCH_ARGUMENT 74
 
 #include <any>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -29,6 +31,8 @@ class Clapar {
                  const char vectorArgsDelimiter = ',',
                  const std::vector<std::string>& beforeThese = {},
                  const std::vector<std::string>& afterThese = {});
+  void addFunction(const std::string& argName,
+                   const std::function<void(void)> func);
   template <typename T>
   std::optional<T> get(const std::string& argName) {
     if (m_options.contains(argName)) {
@@ -116,6 +120,9 @@ class Clapar {
     OptionConfig config;
     /* the variable holding the value that might be passed by command line */
     std::any val;
+    /* a function to run when a certain argument is read in;
+     * can be lambda because it is a std::function */
+    std::function<void(void)> func = []() {};
     /* this is not strictly necessary for the program to function correctly, but
      * does improve performance because we would be iterating over the same
      * options up to 2 times because `m_options` contains up to 2 keys the refer
