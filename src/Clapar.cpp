@@ -112,7 +112,6 @@ void Clapar::checkAndAdd(const Option& option) {
 void Clapar::processArgs(const std::vector<std::string>& args) {
   for (auto& [key, option] : m_options) {
     if (option->wasProcessed) continue;
-    std::cerr << key << " " << option->namePair.nameShort << std::endl;
     option->wasProcessed = true;
 
     /* this loop is safe, trust me */
