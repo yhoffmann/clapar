@@ -123,11 +123,9 @@ class Clapar {
     /* a function to run when a certain argument is read in;
      * can be lambda because it is a std::function */
     std::function<void(void)> func = []() {};
-    /* this is not strictly necessary for the program to function correctly, but
-     * does improve performance because we would be iterating over the same
-     * options up to 2 times because `m_options` contains up to 2 keys the refer
-     * to the same deref'd share_ptr 
-     * NOTE: this does however force the only */
+    /* if both a long and a short option name are supplied, we would iterate
+     * over the same option 2 times, meaning that the long option could
+     * overwrite the short one, or vice versa; this prevents that */
     bool wasProcessed = false;
   };
 
