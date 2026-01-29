@@ -41,6 +41,7 @@ class Clapar {
                  const std::vector<std::string>& afterThese = {});
   void addFunction(const std::string& argName,
                    const std::function<void(void)> func);
+  void parse(int argc, char* argv[]);
   template <typename T>
   std::optional<T> get(const std::string& argName) {
     if (m_options.contains(argName)) {
@@ -54,7 +55,6 @@ class Clapar {
     } else
       return std::nullopt;
   }
-  void parse(int argc, char* argv[]);
   std::string argv0() { return m_argv0; }
 
   Clapar() = default;
