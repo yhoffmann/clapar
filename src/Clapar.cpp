@@ -140,17 +140,17 @@ void Clapar::checkAndAdd(Option& option) {
 }
 
 void Clapar::processArgs(const std::vector<std::string>& args) {
-  for (auto& [key, option] : m_options) {
-    if (option->wasProcessed) continue;
-    option->wasProcessed = true;
+  for (std::size_t argIdx = 0, numArgs = args.size(); argIdx < numArgs;
+       argIdx++) {
+    const std::string& arg = args[argIdx];
+    for (auto& [key, option] : m_options) {
+      if (option->wasProcessed) continue;
 
-    for (std::size_t argIdx = 0, numArgs = args.size(); argIdx < numArgs;
-         argIdx++) {
-      const std::string& arg = args[argIdx];
       const bool isArg = (arg == option->namePair.nameShort ||
                           arg == option->namePair.nameLong);
       if (isArg) {
         processOption(argIdx, args, *option);
+        option->wasProcessed = true;
         break; /* matching arg was found: break means that we do not look for
                 * the same arg again, meaninig that only the first time an arg
                 * is provided on the command-line, will it be read; all mentions
@@ -161,7 +161,7 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
   }
 }
 
-void Clapar::processOption(const std::size_t argIdx,
+void Clapar::processOption(std::size_t& argIdx,
                            const std::vector<std::string>& args,
                            Option& option) {
   if (option.config.isFlag) {
@@ -177,6 +177,15 @@ void Clapar::processOption(const std::size_t argIdx,
     exit(CLAPAR_ERR_WRONG_USAGE);
   }
   const std::string& passedValue = args[argIdx + 1];
+
+  if (m_options.contains(passedValue)) {
+    std::cerr << "Clapar error: passed the name of an option (" << passedValue
+              << ") as a parameter to another option. This is probably not "
+                 "what you want. Exiting!"
+              << std::endl;
+    exit(CLAPAR_ERR_WRONG_USAGE);
+  }
+
   const std::type_index type = option.config.paramOptions.type;
   if (type == Type::STRING) {
     option.val = convertToAny<std::string>(passedValue);
