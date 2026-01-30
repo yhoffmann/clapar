@@ -9,10 +9,12 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
     const std::unordered_map<std::string, std::shared_ptr<Option>> options)
     const {
   for (const auto& [argName, option] : options) {
-    if (option->namePair.nameShort == nameShort ||
-        option->namePair.nameShort == nameLong ||
-        option->namePair.nameLong == nameShort ||
-        option->namePair.nameLong == nameLong || nameShort == nameLong) {
+    const bool doesNameExist = option->namePair.nameShort == nameShort ||
+                               option->namePair.nameShort == nameLong ||
+                               option->namePair.nameLong == nameShort ||
+                               option->namePair.nameLong == nameLong ||
+                               nameShort == nameLong;
+    if (doesNameExist) {
       return CollisionWithOther;
     }
   }
@@ -164,18 +166,25 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
 void Clapar::processOption(std::size_t& argIdx,
                            const std::vector<std::string>& args,
                            Option& option) {
-  if (option.config.isFlag) {
-    option.val = std::any(true);
-    return;
+  {
+    const bool needsNoPassedValue = option.config.isFlag;
+    if (needsNoPassedValue) {
+      option.val = std::any(true);
+      return;
+    }
   }
 
-  if (argIdx + 1 >= args.size()) {
-    std::cerr << "Clapar error: Wrong usage: option "
-              << (option.namePair.nameLong != "" ? option.namePair.nameShort
-                                                 : option.namePair.nameLong)
-              << " needs a passed value but has none. Exiting!" << std::endl;
-    exit(CLAPAR_ERR_WRONG_USAGE);
+  {
+    const bool isLastArg = argIdx + 1 >= args.size();
+    if (isLastArg) {
+      std::cerr << "Clapar error: Wrong usage: option "
+                << (option.namePair.nameLong != "" ? option.namePair.nameShort
+                                                   : option.namePair.nameLong)
+                << " needs a passed value but has none. Exiting!" << std::endl;
+      exit(CLAPAR_ERR_WRONG_USAGE);
+    }
   }
+
   const std::string& passedValue = args[argIdx + 1];
 
   if (m_options.contains(passedValue)) {
