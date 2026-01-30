@@ -132,8 +132,8 @@ void Clapar::checkAndAdd(Option& option) {
 
     case OptionNamePair::CollisionWithOther:
       (*userStream) << ERRMSG_NAME_COLLISION_1 << optionPtr->namePair.nameShort
-        << "\" and \"" << optionPtr->namePair.nameLong
-        << ERRMSG_NAME_COLLISION_2 << "\n";
+                    << "\" and \"" << optionPtr->namePair.nameLong
+                    << ERRMSG_NAME_COLLISION_2 << "\n";
       exit(CLAPAR_ERR_NAME_COLLISION);
       break;
   }
