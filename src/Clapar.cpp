@@ -30,14 +30,10 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
   }
 }
 
-void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
-                     const std::vector<std::string>& beforeThese,
-                     const std::vector<std::string>& afterThese) {
+void Clapar::addFlag(const Clapar::OptionNamePair& namePair) {
   Clapar::Option option = {
       .namePair = namePair,
       .config = {.isFlag = true,
-                 .beforeThese = beforeThese,
-                 .afterThese = afterThese,
                  .paramOptions = {.type = Clapar::Type::BOOL,
                                   .vectorOptions = {}}},
       .val = std::any()};
@@ -45,22 +41,14 @@ void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
   checkAndAdd(option);
 }
 
-void Clapar::addFlag(const char* nameShort,
-                     const std::vector<std::string>& beforeThese,
-                     const std::vector<std::string>& afterThese) {
-  addFlag({nameShort, ""}, beforeThese, afterThese);
-}
+void Clapar::addFlag(const char* nameShort) { addFlag({nameShort, ""}); }
 
 void Clapar::addOption(const Clapar::OptionNamePair& namePair,
                        const std::type_index type, const std::size_t numArgs,
-                       const char vectorArgsDelimiter,
-                       const std::vector<std::string>& beforeThese,
-                       const std::vector<std::string>& afterThese) {
+                       const char vectorArgsDelimiter) {
   Clapar::Option option = {
       .namePair = namePair,
       .config = {.isFlag = false,
-                 .beforeThese = beforeThese,
-                 .afterThese = afterThese,
                  .paramOptions = {.type = type,
                                   .vectorOptions = {.numArgs = numArgs,
                                                     .delimiter =
@@ -72,11 +60,8 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
 
 void Clapar::addOption(const char* nameShort, const std::type_index type,
                        const std::size_t numArgs,
-                       const char vectorArgsDelimiter,
-                       const std::vector<std::string>& beforeThese,
-                       const std::vector<std::string>& afterThese) {
-  addOption({nameShort, ""}, type, numArgs, vectorArgsDelimiter, beforeThese,
-            afterThese);
+                       const char vectorArgsDelimiter) {
+  addOption({nameShort, ""}, type, numArgs, vectorArgsDelimiter);
 }
 
 void Clapar::addFunction(const std::string& argName,
