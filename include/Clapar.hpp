@@ -18,26 +18,46 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef CLAPAR_TEST_COMPILE
+#define TEST_LOG(x) std::cerr << x << std::endl;
+#else
+#define TEST_LOG(x)
+#endif
+
 class Clapar {
  public:
   struct OptionNamePair;  // forward definition
 
  public:
-  void addFlag(const OptionNamePair& namePair);
-  void addFlag(const char* nameShort);
+  void addFlag(const OptionNamePair& namePair,
+               const std::string& helpText = "");
+  void addFlag(const char* nameShort, const std::string& helpText = "");
   void addOption(const OptionNamePair& namePair, const std::type_index type,
+                 const std::string& helpText = "",
                  const std::size_t numArgs = 1,
                  const char vectorArgsDelimiter = ',');
   void addOption(const char* nameShort, const std::type_index type,
+                 const std::string& helpText = "",
                  const std::size_t numArgs = 1,
                  const char vectorArgsDelimiter = ',');
   void addFunction(const std::string& argName,
                    const std::function<void(void)> func);
+
+  /* Add `helpText` to be printed in the help text for an argument */
+  void addHelpText(const std::string& argName, const std::string& helpText);
+
+  /* Add text to be printed in the help screen, for example a simple program
+   * description like "Clapar: a command-line argument parser" */
+  void setProgramDescription(const std::string& description) {
+    m_description = description;
+  }
+
   void parse(int argc, char* argv[]);
+
   template <typename T>
   std::optional<T> get(const std::string& argName) {
-    if (m_options.contains(argName)) {
-      const Option& option = *m_options[argName];
+    if (m_optionsMap.contains(argName)) {
+      const Option& option = *m_optionsMap[argName];
 
       const std::any& val = option.val;
       if (!val.has_value()) {
@@ -47,10 +67,13 @@ class Clapar {
     } else
       return std::nullopt;
   }
-  std::string argv0() { return m_argv0; }
+  std::string argv0() const { return m_argv0; }
+  void printHelp() const;
+  std::string getHelp() const;
 
   Clapar() = default;
   Clapar(int argc, char* argv[]) { parse(argc, argv); }
+  Clapar(const std::string& description) : m_description(description) {}
   Clapar(const Clapar&) = delete;
   Clapar(Clapar&&) = delete;
   Clapar& operator=(const Clapar&) = delete;
@@ -80,10 +103,16 @@ class Clapar {
      * -among other checks, this will make sure that any name at all has been
      * provided. */
     Validity getValidity(
-        const std::unordered_map<std::string, std::shared_ptr<Option>> options)
-        const;
+        const std::vector<std::shared_ptr<Option>>& options) const;
     bool operator==(const OptionNamePair& other) const {
       return (nameShort == other.nameShort && nameLong == other.nameLong);
+    }
+    bool contains(const std::string& name) const {
+      return name == nameShort || name == nameLong;
+    }
+    bool containsIgnoreEmpty(const std::string& name) const {
+      return (!nameShort.empty() && name == nameShort) ||
+             (!nameLong.empty() && name == nameLong);
     }
   };
 
@@ -114,6 +143,7 @@ class Clapar {
   struct Option {
     OptionNamePair namePair;
     OptionConfig config;
+    std::string helpText = "";
     /* the variable holding the value that might be passed by command line */
     std::any val;
     /* a function to run when a certain argument is read in;
@@ -125,8 +155,11 @@ class Clapar {
     bool wasProcessed = false;
   };
 
-  std::unordered_map<std::string, std::shared_ptr<Option>> m_options;
+  std::vector<std::shared_ptr<Option>> m_options;
+  std::unordered_map<std::string, std::shared_ptr<Option>> m_optionsMap;
   std::string m_argv0;
+  std::string m_description =
+      "A program using Clapar for the parsing of command-line arguments";
 
   std::ostream* userStream = &std::cerr;
   std::string userExitMsg =
@@ -134,16 +167,16 @@ class Clapar {
       "type (string in parentheses is the input provided): ";
 
   static constexpr const char* const ERRMSG_NO_NAME_GIVEN =
-      "Clapar ERR: Only empty flag/option names were provided. Exiting!";
+      "Clapar error: Only empty flag/option names were provided. Exiting!";
   static constexpr const char* const ERRMSG_NAME_COLLISION_1 =
-      "Clapar ERR: One of these names (\"";
+      "Clapar error: One of these names (\"";
   static constexpr const char* const ERRMSG_NAME_COLLISION_2 =
-      "\") was assigned to two options. Exiting!";
+      "\") was assigned to multiple options. Exiting!";
 
   void checkAndAdd(Option& option);
   void processArgs(const std::vector<std::string>& args);
-  void processOption(std::size_t& argIdx,
-                     const std::vector<std::string>& args, Option& option);
+  void processOption(std::size_t& argIdx, const std::vector<std::string>& args,
+                     Option& option);
   template <typename T>
   std::any convertToAny(const std::string& passedValue) {
     if constexpr (std::is_same_v<T, std::string>) {
