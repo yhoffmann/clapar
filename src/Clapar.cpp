@@ -1,50 +1,57 @@
 #include "../include/Clapar.hpp"
 
+#include <algorithm>
+
 const std::type_index Clapar::Type::BOOL = typeid(bool);
 const std::type_index Clapar::Type::STRING = typeid(std::string);
 const std::type_index Clapar::Type::FLOAT = typeid(float);
 const std::type_index Clapar::Type::DOUBLE = typeid(double);
 
 Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
-    const std::unordered_map<std::string, std::shared_ptr<Option>> options)
-    const {
-  for (const auto& [argName, option] : options) {
-    const bool doesNameExist = option->namePair.nameShort == nameShort ||
-                               option->namePair.nameShort == nameLong ||
-                               option->namePair.nameLong == nameShort ||
-                               option->namePair.nameLong == nameLong ||
-                               nameShort == nameLong;
-    if (doesNameExist) {
+    const std::vector<std::shared_ptr<Option>>& options) const {
+  const bool isNameHelp = nameShort == "--help" || nameLong == "--help";
+  for (const auto& option : options) {
+    const bool doesNameExist = [&option, this]() -> bool {
+      const Clapar::OptionNamePair& otherNamePair = option->namePair;
+      return (otherNamePair.containsIgnoreEmpty(nameShort) ||
+              otherNamePair.containsIgnoreEmpty(nameLong));
+    }();
+    if (doesNameExist || isNameHelp) {
       return CollisionWithOther;
     }
   }
 
-  if ("" == nameShort && "" == nameLong) {
+  if (nameShort.empty() && nameLong.empty()) {
     return NoneGiven;
-  } else if ("" == nameShort) {
+  } else if (nameShort.empty()) {
     return LGiven;
-  } else if ("" == nameLong) {
+  } else if (nameLong.empty()) {
     return SGiven;
   } else {
     return BothGiven;
   }
 }
 
-void Clapar::addFlag(const Clapar::OptionNamePair& namePair) {
+void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
+                     const std::string& helpText) {
   Clapar::Option option = {
       .namePair = namePair,
       .config = {.isFlag = true,
                  .paramOptions = {.type = Clapar::Type::BOOL,
                                   .vectorOptions = {}}},
+      .helpText = helpText,
       .val = std::any()};
 
   checkAndAdd(option);
 }
 
-void Clapar::addFlag(const char* nameShort) { addFlag({nameShort, ""}); }
+void Clapar::addFlag(const char* nameShort, const std::string& helpText) {
+  addFlag({nameShort, ""}, helpText);
+}
 
 void Clapar::addOption(const Clapar::OptionNamePair& namePair,
-                       const std::type_index type, const std::size_t numArgs,
+                       const std::type_index type, const std::string& helpText,
+                       const std::size_t numArgs,
                        const char vectorArgsDelimiter) {
   Clapar::Option option = {
       .namePair = namePair,
@@ -53,61 +60,114 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
                                   .vectorOptions = {.numArgs = numArgs,
                                                     .delimiter =
                                                         vectorArgsDelimiter}}},
+      .helpText = helpText,
       .val = std::any()};
 
   checkAndAdd(option);
 }
 
 void Clapar::addOption(const char* nameShort, const std::type_index type,
-                       const std::size_t numArgs,
+                       const std::string& helpText, const std::size_t numArgs,
                        const char vectorArgsDelimiter) {
-  addOption({nameShort, ""}, type, numArgs, vectorArgsDelimiter);
+  addOption({nameShort, ""}, type, helpText, numArgs, vectorArgsDelimiter);
 }
 
 void Clapar::addFunction(const std::string& argName,
                          const std::function<void(void)> func) {
-  if (m_options.contains(argName)) {
-    Option& option = *m_options[argName];
+  if (m_optionsMap.contains(argName)) {
+    Option& option = *m_optionsMap[argName];
     option.func = func;
   } else {
-    std::cerr << "Clapar error: Tried assigning function to argument that does "
-                 "not exist. Exiting!"
-              << std::endl;
+    std::cerr << "Clapar error: Tried assigning function to option " << argName
+              << ", but no option with that name exists. Exiting!" << std::endl;
+    exit(CLAPAR_ERR_NO_SUCH_ARGUMENT);
+  }
+}
+
+void Clapar::addHelpText(const std::string& argName,
+                         const std::string& helpText) {
+  if (m_optionsMap.contains(argName)) {
+    m_optionsMap[argName]->helpText = helpText;
+  } else {
+    std::cerr << "Clapar error: Tried adding help text to option " << argName
+              << ", but no option with that name exists. Exiting!" << std::endl;
     exit(CLAPAR_ERR_NO_SUCH_ARGUMENT);
   }
 }
 
 void Clapar::parse(int argc, char* argv[]) {
   m_argv0 = argv[0];
-  const std::vector<std::string> args = [argc, argv]() {
+  const std::vector<std::string> args = [argc, argv, this]() {
     std::vector<std::string> temp;
-    for (int argIdx = 1; argIdx < argc; argIdx++)
+    for (int argIdx = 1; argIdx < argc; argIdx++) {
       temp.emplace_back(argv[argIdx]);
+      if (temp.back() == "--help") {
+        printHelp();
+        exit(0);
+      }
+    }
+
     return temp;
   }();
 
   processArgs(args);
 }
 
+void Clapar::printHelp() const { std::cout << getHelp(); }
+
+std::string Clapar::getHelp() const {
+  std::vector<std::shared_ptr<Option>> optionsTemp(m_options);
+  std::sort(optionsTemp.begin(), optionsTemp.end(),
+            [](const std::shared_ptr<Option> left,
+               const std::shared_ptr<Option> right) -> bool {
+              const std::string& leftComparator =
+                  ("" != left->namePair.nameLong) ? left->namePair.nameLong
+                                                  : left->namePair.nameShort;
+              const std::string& rightComparator =
+                  ("" != right->namePair.nameLong) ? right->namePair.nameLong
+                                                   : right->namePair.nameShort;
+
+              return leftComparator <= rightComparator;
+            });
+
+  std::ostringstream oss;
+
+  oss << m_argv0 << ": " << m_description << "\n";
+  for (const auto& optionPtr : optionsTemp) {
+    const bool isShortEmpty = optionPtr->namePair.nameShort.empty();
+    const bool isLongEmpty = optionPtr->namePair.nameLong.empty();
+    const bool isOptionNameTextEmpty = optionPtr->helpText.empty();
+    oss << "\t" << (!isLongEmpty ? optionPtr->namePair.nameLong : "")
+        << (isShortEmpty || isLongEmpty ? "" : ", ")
+        << (!isShortEmpty ? optionPtr->namePair.nameShort : "")
+        << (isOptionNameTextEmpty ? "" : ":\t" + optionPtr->helpText)
+        << std::endl;
+  }
+
+  return oss.str();
+}
+
 void Clapar::checkAndAdd(Option& option) {
-  Clapar::OptionNamePair::Validity validity =
+  const Clapar::OptionNamePair::Validity validity =
       option.namePair.getValidity(m_options);
 
-  std::shared_ptr<Option> optionPtr =
-      std::make_shared<Option>(std::move(option));
+  m_options.push_back(std::make_shared<Option>(option));
+  std::shared_ptr<Option> optionPtr = m_options.back();
 
   std::string& nameShort = optionPtr->namePair.nameShort;
   std::string& nameLong = optionPtr->namePair.nameLong;
   switch (validity) {
     case OptionNamePair::SGiven:
-      nameLong = optionPtr->namePair.nameShort + "Clapar";
+      m_optionsMap[nameShort] = optionPtr;
       break;
 
     case OptionNamePair::BothGiven:
+      m_optionsMap[nameShort] = optionPtr;
+      m_optionsMap[nameLong] = optionPtr;
       break;
 
     case OptionNamePair::LGiven:
-      nameShort = optionPtr->namePair.nameLong + "Clapar";
+      m_optionsMap[nameLong] = optionPtr;
       break;
 
     case OptionNamePair::NoneGiven:
@@ -117,20 +177,18 @@ void Clapar::checkAndAdd(Option& option) {
 
     case OptionNamePair::CollisionWithOther:
       (*userStream) << ERRMSG_NAME_COLLISION_1 << optionPtr->namePair.nameShort
-                    << "\" and \"" << optionPtr->namePair.nameLong
+                    << "\" or \"" << optionPtr->namePair.nameLong
                     << ERRMSG_NAME_COLLISION_2 << "\n";
       exit(CLAPAR_ERR_NAME_COLLISION);
       break;
   }
-  m_options[nameShort] = optionPtr;
-  m_options[nameLong] = optionPtr;
 }
 
 void Clapar::processArgs(const std::vector<std::string>& args) {
   for (std::size_t argIdx = 0, numArgs = args.size(); argIdx < numArgs;
        argIdx++) {
     const std::string& arg = args[argIdx];
-    for (auto& [key, option] : m_options) {
+    for (auto& [key, option] : m_optionsMap) {
       if (option->wasProcessed) continue;
 
       const bool isArg = (arg == option->namePair.nameShort ||
@@ -172,7 +230,7 @@ void Clapar::processOption(std::size_t& argIdx,
 
   const std::string& passedValue = args[argIdx + 1];
 
-  if (m_options.contains(passedValue)) {
+  if (m_optionsMap.contains(passedValue)) {
     std::cerr << "Clapar error: passed the name of an option (" << passedValue
               << ") as a parameter to another option. This is probably not "
                  "what you want. Exiting!"
