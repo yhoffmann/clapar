@@ -206,7 +206,7 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
   }
 }
 
-void Clapar::processOption(std::size_t& argIdx,
+void Clapar::processOption(const std::size_t argIdx,
                            const std::vector<std::string>& args,
                            Option& option) {
   {
@@ -231,7 +231,7 @@ void Clapar::processOption(std::size_t& argIdx,
   const std::string& passedValue = args[argIdx + 1];
 
   if (m_optionsMap.contains(passedValue)) {
-    std::cerr << "Clapar error: passed the name of an option (" << passedValue
+    std::cerr << "Clapar error: Passed the name of an option (" << passedValue
               << ") as a parameter to another option. This is probably not "
                  "what you want. Exiting!"
               << std::endl;
