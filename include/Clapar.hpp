@@ -180,8 +180,9 @@ class Clapar {
 
   void checkAndAdd(Option& option);
   void processArgs(const std::vector<std::string>& args);
-  void processOption(const std::size_t argIdx, const std::vector<std::string>& args,
-                     Option& option);
+  void processOption(const std::size_t argIdx,
+                     const std::vector<std::string>& args, Option& option);
+
   template <typename T>
   std::any convertToAny(const std::string& passedValue,
                         const std::optional<const char> delimiter) {
