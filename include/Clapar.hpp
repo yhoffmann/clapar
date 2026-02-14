@@ -32,14 +32,18 @@ class Clapar {
   void addFlag(const OptionNamePair& namePair,
                const std::string& helpText = "");
   void addFlag(const char* nameShort, const std::string& helpText = "");
+
   void addOption(const OptionNamePair& namePair, const std::type_index type,
-                 const std::string& helpText = "",
-                 const std::size_t numArgs = 1,
-                 const char vectorArgsDelimiter = ',');
+                 const std::string& helpText = "");
   void addOption(const char* nameShort, const std::type_index type,
-                 const std::string& helpText = "",
-                 const std::size_t numArgs = 1,
-                 const char vectorArgsDelimiter = ',');
+                 const std::string& helpText = "");
+
+  void addVectorOption(const OptionNamePair& namePair,
+                       const std::type_index type, const char delimiter,
+                       const std::string& helpText = "");
+  void addVectorOption(const char* nameShort, const std::type_index type,
+                       const char delimiter, const std::string& helpText = "");
+
   void addFunction(const std::string& argName,
                    const std::function<void(void)> func);
 
@@ -67,6 +71,12 @@ class Clapar {
     } else
       return std::nullopt;
   }
+
+  template <typename T>
+  std::optional<std::vector<T>> getVector(const std::string& argName) {
+    return get<std::vector<T>>(argName);
+  }
+
   std::string argv0() const { return m_argv0; }
   void printHelp() const;
   std::string getHelp() const;
@@ -132,11 +142,7 @@ class Clapar {
 
     struct {
       std::type_index type = typeid(std::string);
-
-      struct {
-        std::size_t numArgs = 1;
-        char delimiter = ',';
-      } vectorOptions;
+      std::optional<const char> delimiter = std::nullopt;
     } paramOptions;
   };
 
@@ -178,20 +184,49 @@ class Clapar {
   void processOption(const std::size_t argIdx, const std::vector<std::string>& args,
                      Option& option);
   template <typename T>
-  std::any convertToAny(const std::string& passedValue) {
-    if constexpr (std::is_same_v<T, std::string>) {
-      return std::any(passedValue);
+  std::any convertToAny(const std::string& passedValue,
+                        const std::optional<const char> delimiter) {
+    if (!delimiter.has_value()) {
+      if constexpr (std::is_same_v<T, std::string>) {
+        return std::any(passedValue);
+      }
+      T val;
+      std::istringstream iss(passedValue);
+      if (!(iss >> val) || !iss.eof() || iss.fail()) {
+        std::cerr
+            << "Clapar error: Conversion failed. Wrong type was supplied for "
+               "the "
+               "parsing (for example trying to parse string->float). Exiting!"
+            << std::endl;
+        exit(CLAPAR_ERR_PARSE_FAILED);
+      }
+      return std::any(val);
+    } else {  // delimiter.has_value() == true
+      TEST_LOG("here with " << passedValue << " " << delimiter.value())
+      std::vector<T> vals;
+      std::string buf;
+      std::istringstream iss(passedValue);
+      while (std::getline(iss, buf, delimiter.value())) {
+        if constexpr (std::is_same_v<T, std::string>) {
+          vals.push_back(buf);
+        } else {
+          T val;
+          std::istringstream issSingle(buf);
+          if (!(issSingle >> val) || !issSingle.eof() || issSingle.fail()) {
+            std::cerr
+                << "Clapar error: When trying to pass vector parameters ("
+                << passedValue
+                << "), could not parse one of the values. This can also be "
+                   "caused having two or more delimiters after one another "
+                   "without a parameter inbetween. Exiting!"
+                << std::endl;
+            exit(CLAPAR_ERR_PARSE_FAILED);
+          }
+          vals.push_back(val);
+        }
+      }
+      return std::any(vals);
     }
-    T val;
-    std::istringstream iss(passedValue);
-    if (!(iss >> val) || !iss.eof() || iss.fail()) {
-      std::cerr
-          << "Clapar error: Conversion failed. Wrong type was supplied for the "
-             "parsing (for example trying to parse string->float). Exiting!"
-          << std::endl;
-      exit(CLAPAR_ERR_PARSE_FAILED);
-    }
-    return std::any(val);
   }
 };
 #endif  // CLAPAR_HPP_

@@ -34,13 +34,14 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
 
 void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
                      const std::string& helpText) {
-  Clapar::Option option = {
-      .namePair = namePair,
-      .config = {.isFlag = true,
-                 .paramOptions = {.type = Clapar::Type::BOOL,
-                                  .vectorOptions = {}}},
-      .helpText = helpText,
-      .val = std::any()};
+  Clapar::Option option = {.namePair = namePair,
+                           .config =
+                               {
+                                   .isFlag = true,
+                                   .paramOptions = {.type = Clapar::Type::BOOL},
+                               },
+                           .helpText = helpText,
+                           .val = std::any()};
 
   checkAndAdd(option);
 }
@@ -50,16 +51,11 @@ void Clapar::addFlag(const char* nameShort, const std::string& helpText) {
 }
 
 void Clapar::addOption(const Clapar::OptionNamePair& namePair,
-                       const std::type_index type, const std::string& helpText,
-                       const std::size_t numArgs,
-                       const char vectorArgsDelimiter) {
+                       const std::type_index type,
+                       const std::string& helpText) {
   Clapar::Option option = {
       .namePair = namePair,
-      .config = {.isFlag = false,
-                 .paramOptions = {.type = type,
-                                  .vectorOptions = {.numArgs = numArgs,
-                                                    .delimiter =
-                                                        vectorArgsDelimiter}}},
+      .config = {.isFlag = false, .paramOptions = {.type = type}},
       .helpText = helpText,
       .val = std::any()};
 
@@ -67,9 +63,27 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
 }
 
 void Clapar::addOption(const char* nameShort, const std::type_index type,
-                       const std::string& helpText, const std::size_t numArgs,
-                       const char vectorArgsDelimiter) {
-  addOption({nameShort, ""}, type, helpText, numArgs, vectorArgsDelimiter);
+                       const std::string& helpText) {
+  addOption({nameShort, ""}, type, helpText);
+}
+
+void Clapar::addVectorOption(const OptionNamePair& namePair,
+                             const std::type_index type, const char delimiter,
+                             const std::string& helpText) {
+  Clapar::Option option = {
+      .namePair = namePair,
+      .config = {.isFlag = false,
+                 .paramOptions = {.type = type, .delimiter = delimiter}},
+      .helpText = helpText,
+      .val = std::any()};
+
+  checkAndAdd(option);
+}
+
+void Clapar::addVectorOption(const char* nameShort, const std::type_index type,
+                             const char delimiter,
+                             const std::string& helpText) {
+  addVectorOption({nameShort, ""}, type, delimiter, helpText);
 }
 
 void Clapar::addFunction(const std::string& argName,
@@ -238,17 +252,20 @@ void Clapar::processOption(const std::size_t argIdx,
     exit(CLAPAR_ERR_WRONG_USAGE);
   }
 
+  std::optional<const char> delimiter = option.config.paramOptions.delimiter;
   const std::type_index type = option.config.paramOptions.type;
   if (type == Type::STRING) {
-    option.val = convertToAny<std::string>(passedValue);
+    option.val = convertToAny<std::string>(passedValue, delimiter);
   } else if (type == Type::BOOL) {
-    option.val = convertToAny<bool>(passedValue);
+    option.val = convertToAny<bool>(passedValue, delimiter);
   } else if (type == Type::FLOAT) {
-    option.val = convertToAny<float>(passedValue);
+    option.val = convertToAny<float>(passedValue, delimiter);
   } else if (type == Type::DOUBLE) {
-    option.val = convertToAny<double>(passedValue);
+    option.val = convertToAny<double>(passedValue, delimiter);
   } else {
-    std::cerr << "Could not convert to std::any" << std::endl;
+    std::cerr << "Clapar warning: Could not convert passed value ("
+              << passedValue << ") to std::any." << std::endl;
   }
+
   option.func();
 }
