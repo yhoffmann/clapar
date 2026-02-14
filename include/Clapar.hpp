@@ -82,7 +82,6 @@ class Clapar {
   std::string getHelp() const;
 
   Clapar() = default;
-  Clapar(int argc, char* argv[]) { parse(argc, argv); }
   Clapar(const std::string& description) : m_description(description) {}
   Clapar(const Clapar&) = delete;
   Clapar(Clapar&&) = delete;
