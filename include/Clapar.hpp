@@ -33,17 +33,39 @@ class Clapar {
                const std::string& helpText = "");
   void addFlag(const char* nameShort, const std::string& helpText = "");
 
+  /* Add an option to read in data from.
+   * This will look for the names specified in `namePair` (or just the single,
+   * short name for the overloaded function) and read in the parameter specified
+   * after that argument. `helpText` is an optional variable to pass a text that
+   * will be displayed when an argument is `--help`. */
   void addOption(const OptionNamePair& namePair, const std::type_index type,
                  const std::string& helpText = "");
+  /* Overloaded function to allow passing a single name instead of the struct
+   * holding two. */
   void addOption(const char* nameShort, const std::type_index type,
                  const std::string& helpText = "");
 
+  /* The vector version of `addOption`, which will do the same thing but look
+   * for a vector of arguments like this (with hypothetical option name `--vec`,
+   * delimiter `,`, and type float): `--vec 1,2,3`. The delimiter can also be a
+   * space, but then the vector arguments need to be passed with quotes around
+   * them like this: `--vec '1 2 3'`. Make sure to NOT have 2 delimiters after
+   * one another, as this will make the passing fail because it expects a value
+   * between delimiters. You can however end with a delimiter (like this
+   * `--vec 1,2,` <- notice trailing comma). */
   void addVectorOption(const OptionNamePair& namePair,
                        const std::type_index type, const char delimiter,
                        const std::string& helpText = "");
+  /* Overloaded function to allow passing a single name instead of the struct
+   * holding two. */
   void addVectorOption(const char* nameShort, const std::type_index type,
                        const char delimiter, const std::string& helpText = "");
 
+  /* Function to add a function (`std::function<void(void)>` or lambda) to be
+   * executed when the corresponding argument is found in the command-line
+   * arguments. Does not call or error out if the argument is not found in the
+   * command-line arguments. Does error if the `argName`, that is passed to the
+   * function, is not found in the configured arguments. */
   void addFunction(const std::string& argName,
                    const std::function<void(void)> func);
 
@@ -58,6 +80,9 @@ class Clapar {
 
   void parse(int argc, char* argv[]);
 
+  /* Get a `std::optional` that may contain the value passed with the
+   * corresponding option/flag.
+   * Make sure to get the type correct as this will error out if not. */
   template <typename T>
   std::optional<T> get(const std::string& argName) {
     if (m_optionsMap.contains(argName)) {
@@ -72,13 +97,20 @@ class Clapar {
       return std::nullopt;
   }
 
+  /* Function to get a `std::optional` with the vector containing vector
+   * arguments. Will obviously error out if called on non-vector arguments. */
   template <typename T>
   std::optional<std::vector<T>> getVector(const std::string& argName) {
     return get<std::vector<T>>(argName);
   }
 
+  /* Get `argv[0]`, the path and name that the binary was called
+   * with. */
   std::string argv0() const { return m_argv0; }
+  /* Print the help text, which automatically includes any help texts that were
+   * passed any of the functions to add an option/flag. */
   void printHelp() const;
+  /* Get the help text that would normally be printed by `printHelp` */
   std::string getHelp() const;
 
   Clapar() = default;
