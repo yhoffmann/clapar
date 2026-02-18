@@ -87,7 +87,7 @@ class Clapar {
    * corresponding option/flag.
    * Make sure to get the type correct as this will error out if not. */
   template <typename T>
-  std::optional<T> get(const std::string& argName) {
+  std::optional<T> get(const std::string& argName) const {
     if (m_optionsMap.contains(argName)) {
       const Option& option = *m_optionsMap.at(argName);
 
@@ -102,8 +102,14 @@ class Clapar {
   /* Function to get a `std::optional` with the vector containing vector
    * arguments. Will obviously error out if called on non-vector arguments. */
   template <typename T>
-  std::optional<std::vector<T>> getVector(const std::string& argName) {
+  std::optional<std::vector<T>> getVector(const std::string& argName) const {
     return get<std::vector<T>>(argName);
+  }
+
+  /* Less verbose function to quickly access a flag's state. We do not have to
+   * specify the type to parse into as flags are always bool. */
+  bool getFlag(const std::string& flagName) const {
+    return get<bool>(flagName).value_or(false);
   }
 
   /* Get `argv[0]`, the path and name that the binary was called
