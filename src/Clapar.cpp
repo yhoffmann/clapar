@@ -86,6 +86,10 @@ void Clapar::addVectorOption(const char* nameShort, const std::type_index type,
   addVectorOption({nameShort, ""}, type, delimiter, helpText);
 }
 
+void Clapar::setDefault(const std::string& argName, const std::any defaultVal) {
+  m_optionsMap[argName]->val = defaultVal;
+}
+
 void Clapar::addFunction(const std::string& argName,
                          const std::function<void(void)> func) {
   if (m_optionsMap.contains(argName)) {

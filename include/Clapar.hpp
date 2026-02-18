@@ -64,6 +64,15 @@ class Clapar {
   void addVectorOption(const char* nameShort, const std::type_index type,
                        const char delimiter, const std::string& helpText = "");
 
+  /* Set a default value for an argument so that it always has a value set if
+   * accessed. Side note: Similar behaviour can also be achieved by just writing
+   * `.get<type>(argName).value_or(defaultVal)`. Important note: make sure
+   * that the supplied type is actually what you want. For example, you need to
+   * pass `std::string("some string")` instead of just `"some string"`, because
+   * we cannot implicitly convert types here since this constructs a `std::any`
+   * from `defaultVal`. */
+  void setDefault(const std::string& argName, const std::any defaultVal);
+
   /* Function to add a function (`std::function<void(void)>` or lambda) to be
    * executed when the corresponding argument is found in the command-line
    * arguments. Does not call or error out if the argument is not found in the
