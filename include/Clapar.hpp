@@ -89,13 +89,12 @@ class Clapar {
   template <typename T>
   std::optional<T> get(const std::string& argName) {
     if (m_optionsMap.contains(argName)) {
-      const Option& option = *m_optionsMap[argName];
+      const Option& option = *m_optionsMap.at(argName);
 
-      const std::any& val = option.val;
-      if (!val.has_value()) {
+      if (!option.val.has_value()) {
         return std::nullopt;
       } else
-        return std::any_cast<T>(val);
+        return std::any_cast<T>(option.val);
     } else
       return std::nullopt;
   }
