@@ -34,14 +34,11 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
 
 void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
                      const std::string& helpText) {
-  Clapar::Option option = {.namePair = namePair,
-                           .config =
-                               {
-                                   .isFlag = true,
-                                   .paramOptions = {.type = Clapar::Type::BOOL},
-                               },
-                           .helpText = helpText,
-                           .val = std::any()};
+  Clapar::Option option = {
+      .namePair = namePair,
+      .config = {.isFlag = true, .paramOptions = {.type = Clapar::Type::BOOL}},
+      .helpText = helpText,
+      .val = std::any()};
 
   checkAndAdd(option);
 }
