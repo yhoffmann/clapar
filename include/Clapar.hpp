@@ -29,8 +29,11 @@ class Clapar {
   struct OptionNamePair;  // forward definition
 
  public:
+  /* Add a flag. This will make `::get<bool>("--name-of-flag")` return true if
+   * the flag is found in the command-line arguments, and false otherwise. */
   void addFlag(const OptionNamePair& namePair,
                const std::string& helpText = "");
+  /* Single-name overload of `addFlag`. */
   void addFlag(const char* nameShort, const std::string& helpText = "");
 
   /* Add an option to read in data from.
