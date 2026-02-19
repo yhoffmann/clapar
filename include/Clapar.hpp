@@ -181,6 +181,7 @@ class Clapar {
     static const std::type_index STRING;
     static const std::type_index FLOAT;
     static const std::type_index DOUBLE;
+    static const std::type_index INT;
   };
 
  protected:

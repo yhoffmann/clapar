@@ -6,6 +6,7 @@ const std::type_index Clapar::Type::BOOL = typeid(bool);
 const std::type_index Clapar::Type::STRING = typeid(std::string);
 const std::type_index Clapar::Type::FLOAT = typeid(float);
 const std::type_index Clapar::Type::DOUBLE = typeid(double);
+const std::type_index Clapar::Type::INT = typeid(int);
 
 Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
     const std::vector<std::shared_ptr<Option>>& options) const {
@@ -263,6 +264,8 @@ void Clapar::processOption(const std::size_t argIdx,
     option.val = convertToAny<float>(passedValue, delimiter);
   } else if (type == Type::DOUBLE) {
     option.val = convertToAny<double>(passedValue, delimiter);
+  } else if (type == Type::INT) {
+    option.val = convertToAny<int>(passedValue, delimiter);
   } else {
     std::cerr << "Clapar warning: Could not convert passed value ("
               << passedValue << ") to std::any." << std::endl;
