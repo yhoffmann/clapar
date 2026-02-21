@@ -174,15 +174,15 @@ class Clapar {
     }
   };
 
-  // struct containing the possible types to convert the arguments to options
-  // into
+  /* struct containing the possible types to convert the arguments to options
+   * into */
   struct Type {
     static const std::type_index BOOL;
     static const std::type_index STRING;
     static const std::type_index FLOAT;
     static const std::type_index DOUBLE;
     static const std::type_index INT;
-    static const std::type_index SIZE_T;
+    static const std::type_index UNSIGNED;
   };
 
  protected:
