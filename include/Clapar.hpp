@@ -183,6 +183,7 @@ class Clapar {
     static const std::type_index DOUBLE;
     static const std::type_index INT;
     static const std::type_index UNSIGNED;
+    static const std::type_index CHAR;
   };
 
  protected:
@@ -242,6 +243,8 @@ class Clapar {
     if (!delimiter.has_value()) {
       if constexpr (std::is_same_v<T, std::string>) {
         return std::any(passedValue);
+      } else if constexpr (std::is_same_v<T, char>) {
+        return std::any(passedValue[0]);
       }
       T val;
       std::istringstream iss(passedValue);
@@ -249,8 +252,8 @@ class Clapar {
         std::cerr
             << "Clapar error: Conversion failed. Wrong type was supplied for "
                "the "
-               "parsing (for example trying to parse string->float). Exiting!"
-            << std::endl;
+               "parsing of \""
+            << passedValue << "\". Exiting!" << std::endl;
         exit(CLAPAR_ERR_PARSE_FAILED);
       }
       return std::any(val);
