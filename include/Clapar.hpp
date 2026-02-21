@@ -147,6 +147,22 @@ class Clapar {
     std::string nameShort;
     std::string nameLong;
 
+    operator std::string() {
+      return (not nameShort.empty() ? nameShort : nameLong);
+    }
+    operator const std::string() const {
+      return (not nameShort.empty() ? nameShort : nameLong);
+    }
+    operator std::string&() {
+      return (not nameShort.empty() ? nameShort : nameLong);
+    }
+    operator const std::string&() const {
+      return (not nameShort.empty() ? nameShort : nameLong);
+    }
+    operator std::string&&() {
+      return std::move(not nameShort.empty() ? nameShort : nameLong);
+    }
+
    private:
     friend class Clapar;
 
