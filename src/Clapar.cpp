@@ -154,11 +154,20 @@ std::string Clapar::getHelp() const {
     const bool isShortEmpty = optionPtr->namePair.nameShort.empty();
     const bool isLongEmpty = optionPtr->namePair.nameLong.empty();
     const bool isOptionNameTextEmpty = optionPtr->helpText.empty();
-    oss << "\t" << (!isLongEmpty ? optionPtr->namePair.nameLong : "")
-        << (isShortEmpty || isLongEmpty ? "" : ", ")
-        << (!isShortEmpty ? optionPtr->namePair.nameShort : "")
-        << (isOptionNameTextEmpty ? "" : ":\t" + optionPtr->helpText)
-        << std::endl;
+    const bool isLastEntry = &optionPtr == &optionsTemp.back() && optionPtr;
+    const std::string type = getTypeName(optionPtr->config.paramOptions.type);
+
+    oss << setBold << "  " << (!isLongEmpty ? optionPtr->namePair.nameLong : "")
+        << unsetBold << (isShortEmpty || isLongEmpty ? "" : ", ") << setBold
+        << (!isShortEmpty ? optionPtr->namePair.nameShort : "") << unsetBold
+        << (not optionPtr->config.isFlag
+                ? " <" + type +
+                      (optionPtr->config.paramOptions.delimiter.has_value()
+                           ? ",...>"
+                           : ">")
+                : "")
+        << (isOptionNameTextEmpty ? "" : ":\n\t" + optionPtr->helpText)
+        << (not isLastEntry ? "\n" : "");
   }
 
   return oss.str();
@@ -275,4 +284,22 @@ void Clapar::processOption(const std::size_t argIdx,
   }
 
   option.func();
+}
+
+const char* Clapar::getTypeName(const std::type_index type) {
+  if (type == Type::STRING) {
+    return "string";
+  } else if (type == Type::BOOL) {
+    return "bool";
+  } else if (type == Type::FLOAT) {
+    return "float";
+  } else if (type == Type::DOUBLE) {
+    return "double";
+  } else if (type == Type::INT) {
+    return "int";
+  } else if (type == Type::UNSIGNED) {
+    return "unsigned";
+  } else {
+    return "";
+  }
 }

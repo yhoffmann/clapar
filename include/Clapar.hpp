@@ -234,6 +234,8 @@ class Clapar {
   void processOption(const std::size_t argIdx,
                      const std::vector<std::string>& args, Option& option);
 
+  static const char* getTypeName(const std::type_index type);
+
   template <typename T>
   std::any convertToAny(const std::string& passedValue,
                         const std::optional<const char> delimiter) {
@@ -278,6 +280,22 @@ class Clapar {
       }
       return std::any(vals);
     }
+  }
+
+ protected:
+  static std::ostream& setBold(std::ostream& os) {
+    return os
+#ifdef __linux__
+           << "\033[1m"
+#endif
+        ;
+  }
+  static std::ostream& unsetBold(std::ostream& os) {
+    return os
+#ifdef __linux__
+           << "\033[0m"
+#endif
+        ;
   }
 };
 #endif  // CLAPAR_HPP_
