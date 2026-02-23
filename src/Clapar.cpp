@@ -38,10 +38,14 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
 void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
                      const std::string& helpText) {
   Clapar::Option option = {
-      .namePair = namePair,
-      .config = {.isFlag = true, .paramOptions = {.type = Clapar::Type::BOOL}},
-      .helpText = helpText,
-      .val = std::any()};
+      namePair,
+      {
+          true,
+          {Clapar::Type::BOOL},
+      },
+      helpText,
+      std::any(),
+  };
 
   checkAndAdd(option);
 }
@@ -54,10 +58,14 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
                        const std::type_index type,
                        const std::string& helpText) {
   Clapar::Option option = {
-      .namePair = namePair,
-      .config = {.isFlag = false, .paramOptions = {.type = type}},
-      .helpText = helpText,
-      .val = std::any()};
+      namePair,
+      {
+          false,
+          {type},
+      },
+      helpText,
+      std::any(),
+  };
 
   checkAndAdd(option);
 }
@@ -71,11 +79,14 @@ void Clapar::addVectorOption(const OptionNamePair& namePair,
                              const std::type_index type, const char delimiter,
                              const std::string& helpText) {
   Clapar::Option option = {
-      .namePair = namePair,
-      .config = {.isFlag = false,
-                 .paramOptions = {.type = type, .delimiter = delimiter}},
-      .helpText = helpText,
-      .val = std::any()};
+      namePair,
+      {
+          false,
+          {type, delimiter},
+      },
+      helpText,
+      std::any(),
+  };
 
   checkAndAdd(option);
 }
@@ -92,7 +103,7 @@ void Clapar::setDefault(const std::string& argName, const std::any defaultVal) {
 
 void Clapar::addFunction(const std::string& argName,
                          const std::function<void(void)> func) {
-  if (m_optionsMap.contains(argName)) {
+  if (m_optionsMap.find(argName) != m_optionsMap.end()) {
     Option& option = *m_optionsMap[argName];
     option.func = func;
   } else {
@@ -104,7 +115,7 @@ void Clapar::addFunction(const std::string& argName,
 
 void Clapar::addHelpText(const std::string& argName,
                          const std::string& helpText) {
-  if (m_optionsMap.contains(argName)) {
+  if (m_optionsMap.find(argName) != m_optionsMap.end()) {
     m_optionsMap[argName]->helpText = helpText;
   } else {
     std::cerr << "Clapar error: Tried adding help text to option " << argName
@@ -258,7 +269,7 @@ void Clapar::processOption(const std::size_t argIdx,
 
   const std::string& passedValue = args[argIdx + 1];
 
-  if (m_optionsMap.contains(passedValue)) {
+  if (m_optionsMap.find(passedValue) != m_optionsMap.end()) {
     std::cerr << "Clapar error: Passed the name of an option (" << passedValue
               << ") as a parameter to another option. This is probably not "
                  "what you want. Exiting!"
