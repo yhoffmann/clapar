@@ -97,7 +97,7 @@ class Clapar {
    * Make sure to get the type correct as this will error out if not. */
   template <typename T>
   std::optional<T> get(const std::string& argName) const {
-    if (m_optionsMap.contains(argName)) {
+    if (m_optionsMap.find(argName) != m_optionsMap.end()) {
       const Option& option = *m_optionsMap.at(argName);
 
       if (!option.val.has_value()) {
