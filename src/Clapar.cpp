@@ -161,14 +161,14 @@ std::string Clapar::getHelp() const {
     oss << setBold << "  " << (!isLongEmpty ? optionPtr->namePair.nameLong : "")
         << unsetBold << (isShortEmpty || isLongEmpty ? "" : ", ") << setBold
         << (!isShortEmpty ? optionPtr->namePair.nameShort : "") << unsetBold
-        << (not optionPtr->config.isFlag
+        << (!optionPtr->config.isFlag
                 ? " <" + type +
                       (optionPtr->config.paramOptions.delimiter.has_value()
                            ? ",...>"
                            : ">")
                 : "")
         << (isOptionNameTextEmpty ? "" : ":\n\t" + optionPtr->helpText)
-        << (not isLastEntry ? "\n" : "");
+        << (!isLastEntry ? "\n" : "");
   }
 
   return oss.str();

@@ -148,19 +148,19 @@ class Clapar {
     std::string nameLong;
 
     operator std::string() {
-      return (not nameShort.empty() ? nameShort : nameLong);
+      return (!nameShort.empty() ? nameShort : nameLong);
     }
     operator const std::string() const {
-      return (not nameShort.empty() ? nameShort : nameLong);
+      return (!nameShort.empty() ? nameShort : nameLong);
     }
     operator std::string&() {
-      return (not nameShort.empty() ? nameShort : nameLong);
+      return (!nameShort.empty() ? nameShort : nameLong);
     }
     operator const std::string&() const {
-      return (not nameShort.empty() ? nameShort : nameLong);
+      return (!nameShort.empty() ? nameShort : nameLong);
     }
     operator std::string&&() {
-      return std::move(not nameShort.empty() ? nameShort : nameLong);
+      return std::move(!nameShort.empty() ? nameShort : nameLong);
     }
 
    private:
