@@ -240,6 +240,7 @@ void Clapar::processOption(const std::size_t argIdx,
     const bool needsNoPassedValue = option.config.isFlag;
     if (needsNoPassedValue) {
       option.val = std::any(true);
+      option.func();
       return;
     }
   }
