@@ -107,9 +107,9 @@ void Clapar::addFunction(const std::string& argName,
     Option& option = *m_optionsMap[argName];
     option.func = func;
   } else {
-    std::cerr << "Clapar error: Tried assigning function to option " << argName
-              << ", but no option with that name exists. Exiting!" << std::endl;
-    exit(CLAPAR_ERR_NO_SUCH_ARGUMENT);
+    error(ErrNoSuchArgument,
+          "Tried assigning function to option \"" + argName +
+              "\", but no option with the name exists. Exiting!");
   }
 }
 
@@ -118,9 +118,9 @@ void Clapar::addHelpText(const std::string& argName,
   if (m_optionsMap.find(argName) != m_optionsMap.end()) {
     m_optionsMap[argName]->helpText = helpText;
   } else {
-    std::cerr << "Clapar error: Tried adding help text to option " << argName
-              << ", but no option with that name exists. Exiting!" << std::endl;
-    exit(CLAPAR_ERR_NO_SUCH_ARGUMENT);
+    error(ErrNoSuchArgument,
+          "Tried assigning help text to option \"" + argName +
+              "\", but no option with that names exists. Exiting!");
   }
 }
 
@@ -209,15 +209,14 @@ void Clapar::checkAndAdd(Option& option) {
       break;
 
     case OptionNamePair::NoneGiven:
-      (*userStream) << ERRMSG_NO_NAME_GIVEN << "\n";
-      exit(CLAPAR_ERR_NO_NAME_GIVEN);
+      error(ErrNoNameGiven, ERRMSG_NO_NAME_GIVEN);
       break;
 
     case OptionNamePair::CollisionWithOther:
-      (*userStream) << ERRMSG_NAME_COLLISION_1 << optionPtr->namePair.nameShort
-                    << "\" or \"" << optionPtr->namePair.nameLong
-                    << ERRMSG_NAME_COLLISION_2 << "\n";
-      exit(CLAPAR_ERR_NAME_COLLISION);
+      error(ErrNameCollision, ERRMSG_NAME_COLLISION_1 +
+                                  optionPtr->namePair.nameShort + "\" or \"" +
+                                  optionPtr->namePair.nameLong +
+                                  ERRMSG_NAME_COLLISION_2);
       break;
   }
 }
@@ -259,22 +258,17 @@ void Clapar::processOption(const std::size_t argIdx,
   {
     const bool isLastArg = argIdx + 1 >= args.size();
     if (isLastArg) {
-      std::cerr << "Clapar error: Wrong usage: option "
-                << (option.namePair.nameLong != "" ? option.namePair.nameShort
-                                                   : option.namePair.nameLong)
-                << " needs a passed value but has none. Exiting!" << std::endl;
-      exit(CLAPAR_ERR_WRONG_USAGE);
+      error(ErrWrongUsage, "Wrong usage: option " + option.namePair.string() +
+                               " needs a passed value but has none. Exiting!");
     }
   }
 
   const std::string& passedValue = args[argIdx + 1];
 
   if (m_optionsMap.find(passedValue) != m_optionsMap.end()) {
-    std::cerr << "Clapar error: Passed the name of an option (" << passedValue
-              << ") as a parameter to another option. This is probably not "
-                 "what you want. Exiting!"
-              << std::endl;
-    exit(CLAPAR_ERR_WRONG_USAGE);
+    error(ErrWrongUsage, "Passed the name of option \"" + passedValue +
+                             "\" as a parameter to another option. THis is "
+                             "probably not what you want. Exiting!");
   }
 
   std::optional<const char> delimiter = option.config.paramOptions.delimiter;
@@ -319,4 +313,9 @@ const char* Clapar::getTypeName(const std::type_index type) {
   } else {
     return "";
   }
+}
+
+void Clapar::error(Clapar::StatusCode exitCode, const std::string& msg) {
+  *(userStream) << m_argv0 << " Clapar error: " << msg << std::endl;
+  exit(static_cast<int>(exitCode));
 }

@@ -1,12 +1,6 @@
 #ifndef CLAPAR_HPP_
 #define CLAPAR_HPP_
 
-#define CLAPAR_ERR_NO_NAME_GIVEN 70
-#define CLAPAR_ERR_NAME_COLLISION 71
-#define CLAPAR_ERR_PARSE_FAILED 72
-#define CLAPAR_ERR_WRONG_USAGE 73
-#define CLAPAR_ERR_NO_SUCH_ARGUMENT 74
-
 #include <any>
 #include <functional>
 #include <iostream>
@@ -140,6 +134,14 @@ class Clapar {
 
  protected:
   struct Option;  // forward definition
+  enum StatusCode : int {
+    ErrNoNameGiven = 70,
+    ErrNameCollision,
+    ErrParseFailed,
+    ErrWrongUsage,
+    ErrNoSuchArgument
+  };
+  void error(StatusCode exitCode, const std::string& msg);
 
  public:
   // struct that contains the name pair (long & short) for the option
@@ -161,6 +163,9 @@ class Clapar {
     }
     operator std::string&&() {
       return std::move(!nameShort.empty() ? nameShort : nameLong);
+    }
+    std::string string() const {
+      return (!nameShort.empty() ? nameShort : nameLong);
     }
 
    private:
@@ -265,12 +270,10 @@ class Clapar {
       T val;
       std::istringstream iss(passedValue);
       if (!(iss >> val) || !iss.eof() || iss.fail()) {
-        std::cerr
-            << "Clapar error: Conversion failed. Wrong type was supplied for "
-               "the "
-               "parsing of \""
-            << passedValue << "\". Exiting!" << std::endl;
-        exit(CLAPAR_ERR_PARSE_FAILED);
+        error(
+            StatusCode::ErrParseFailed,
+            "Conversion failed. Wrong type was supplied for the parsing of \"" +
+                passedValue + "\". Exiting!");
       }
       return std::any(val);
     } else {  // delimiter.has_value() == true
@@ -285,14 +288,11 @@ class Clapar {
           T val;
           std::istringstream issSingle(buf);
           if (!(issSingle >> val) || !issSingle.eof() || issSingle.fail()) {
-            std::cerr
-                << "Clapar error: When trying to pass vector parameters ("
-                << passedValue
-                << "), could not parse one of the values. This can also be "
-                   "caused having two or more delimiters after one another "
-                   "without a parameter inbetween. Exiting!"
-                << std::endl;
-            exit(CLAPAR_ERR_PARSE_FAILED);
+            error(StatusCode::ErrParseFailed,
+                  "When trying to prase vector parameters \"" + passedValue +
+                      "\", could not parse one of the values. This can also be "
+                      "caused by having two or more delimiters after one "
+                      "another without a parameter inbetween. Exiting!");
           }
           vals.push_back(val);
         }
