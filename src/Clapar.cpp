@@ -133,6 +133,10 @@ void Clapar::shouldExitAtUnknownArg(const bool b) {
   m_shouldExitAtUnknownArg = b;
 }
 
+void Clapar::shouldExitIfParamIsSameAsAnyArg(const bool b) {
+  m_shouldExitIfParamIsSameAsAnyArg = b;
+}
+
 void Clapar::parse(int argc, char* argv[]) {
   m_argv0 = argv[0];
   const std::vector<std::string> args = [argc, argv, this]() {
@@ -299,7 +303,8 @@ void Clapar::processOption(const std::size_t argIdx,
 
   const std::string& passedValue = args[argIdx + 1];
 
-  if (m_optionsMap.find(passedValue) != m_optionsMap.end()) {
+  if (m_shouldExitIfParamIsSameAsAnyArg &&
+      m_optionsMap.find(passedValue) != m_optionsMap.end()) {
     error(ErrWrongUsage, "Passed the name of option \"" + passedValue +
                              "\" as a parameter to another option. This is "
                              "probably not what you want. Exiting!");

@@ -83,6 +83,7 @@ class Clapar {
   void setProgramDescription(const std::string& description);
 
   void shouldExitAtUnknownArg(const bool b = true);
+  void shouldExitIfParamIsSameAsAnyArg(const bool b = true);
 
   void parse(int argc, char* argv[]);
 
@@ -234,6 +235,7 @@ class Clapar {
   std::vector<std::shared_ptr<Option>> m_options;
   std::unordered_map<std::string, std::shared_ptr<Option>> m_optionsMap;
   bool m_shouldExitAtUnknownArg = false;
+  bool m_shouldExitIfParamIsSameAsAnyArg = false;
   std::string m_argv0;
   std::string m_description =
       "A program using Clapar for the parsing of command-line arguments";
