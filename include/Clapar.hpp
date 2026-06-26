@@ -82,6 +82,8 @@ class Clapar {
    * description like "Clapar: a command-line argument parser" */
   void setProgramDescription(const std::string& description);
 
+  void shouldExitAtUnknownArg(const bool b = true);
+
   void parse(int argc, char* argv[]);
 
   /* Get a `std::optional` that may contain the value passed with the
@@ -231,6 +233,7 @@ class Clapar {
 
   std::vector<std::shared_ptr<Option>> m_options;
   std::unordered_map<std::string, std::shared_ptr<Option>> m_optionsMap;
+  bool m_shouldExitAtUnknownArg = false;
   std::string m_argv0;
   std::string m_description =
       "A program using Clapar for the parsing of command-line arguments";
@@ -250,7 +253,9 @@ class Clapar {
   void checkAndAdd(Option& option);
   void processArgs(const std::vector<std::string>& args);
   void processOption(const std::size_t argIdx,
-                     const std::vector<std::string>& args, Option& option);
+                     const std::vector<std::string>& args, Option& option,
+                     bool& isParam);
+  void processFlag(Option& option);
 
   static const char* getTypeName(const std::type_index type);
 

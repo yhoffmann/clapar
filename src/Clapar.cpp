@@ -1,6 +1,7 @@
 #include "../include/Clapar.hpp"
 
 #include <algorithm>
+#include <set>
 
 const std::type_index Clapar::Type::BOOL = typeid(bool);
 const std::type_index Clapar::Type::STRING = typeid(std::string);
@@ -128,6 +129,10 @@ void Clapar::setProgramDescription(const std::string& description) {
   m_description = description;
 }
 
+void Clapar::shouldExitAtUnknownArg(const bool b) {
+  m_shouldExitAtUnknownArg = b;
+}
+
 void Clapar::parse(int argc, char* argv[]) {
   m_argv0 = argv[0];
   const std::vector<std::string> args = [argc, argv, this]() {
@@ -234,52 +239,69 @@ void Clapar::checkAndAdd(Option& option) {
 }
 
 void Clapar::processArgs(const std::vector<std::string>& args) {
+  bool isParam = false;
+  std::set<std::string> processedArgs;
+
   for (std::size_t argIdx = 0, numArgs = args.size(); argIdx < numArgs;
        argIdx++) {
-    const std::string& arg = args[argIdx];
-    for (auto& [key, option] : m_optionsMap) {
-      if (option->wasProcessed) continue;
+    if (isParam) {
+      isParam = false;
+      continue;
+    }
 
-      const bool isArg = (arg == option->namePair.nameShort ||
-                          arg == option->namePair.nameLong);
-      if (isArg) {
-        processOption(argIdx, args, *option);
+    const std::string& arg = args[argIdx];
+
+    if (m_shouldExitAtUnknownArg &&
+        processedArgs.find(arg) != processedArgs.end())
+      error(ErrWrongUsage,
+            "Found option \"" + arg +
+                "\" twice and program is setup to exit if args show up "
+                "twice. Exiting!");
+
+    bool isArgKnown = false;
+    for (auto& [argNameToCheck, option] : m_optionsMap) {
+      if (m_shouldExitAtUnknownArg && option->wasProcessed) continue;
+
+      if (arg == argNameToCheck) {
+        processOption(argIdx, args, *option, isParam);
         option->wasProcessed = true;
-        break; /* matching arg was found: break means that we do not look for
-                * the same arg again, meaninig that only the first time an arg
-                * is provided on the command-line, will it be read; all mentions
-                * beyond the first are discarded and the associated function is
-                * called only when the first arg is assigned */
+        processedArgs.insert(option->namePair.nameShort);
+        processedArgs.insert(option->namePair.nameLong);
+        isArgKnown = true;
       }
     }
+
+    if (m_shouldExitAtUnknownArg && !isArgKnown)
+      error(ErrNoSuchArgument,
+            "The provided arg \"" + arg +
+                "\" is not known and the program is set up to exit if an "
+                "unknown arg is found. Exiting!");
   }
 }
 
-void Clapar::processOption(const std::size_t argIdx,
-                           const std::vector<std::string>& args,
-                           Option& option) {
-  {
-    const bool needsNoPassedValue = option.config.isFlag;
-    if (needsNoPassedValue) {
-      option.val = std::any(true);
-      option.func();
-      return;
-    }
-  }
+void Clapar::processFlag(Option& option) {
+  option.val = std::any(true);
+  option.func();
+}
 
-  {
-    const bool isLastArg = argIdx + 1 >= args.size();
-    if (isLastArg) {
+void Clapar::processOption(const std::size_t argIdx,
+                           const std::vector<std::string>& args, Option& option,
+                           bool& isParam) {
+  if (option.config.isFlag)
+    return processFlag(option);
+  else {
+    const bool hasNoValue = argIdx + 1 >= args.size();
+    if (hasNoValue)
       error(ErrWrongUsage, "Wrong usage: option " + option.namePair.string() +
                                " needs a passed value but has none. Exiting!");
-    }
   }
+  isParam = true;
 
   const std::string& passedValue = args[argIdx + 1];
 
   if (m_optionsMap.find(passedValue) != m_optionsMap.end()) {
     error(ErrWrongUsage, "Passed the name of option \"" + passedValue +
-                             "\" as a parameter to another option. THis is "
+                             "\" as a parameter to another option. This is "
                              "probably not what you want. Exiting!");
   }
 
