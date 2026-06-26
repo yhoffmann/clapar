@@ -80,9 +80,7 @@ class Clapar {
 
   /* Add text to be printed in the help screen, for example a simple program
    * description like "Clapar: a command-line argument parser" */
-  void setProgramDescription(const std::string& description) {
-    m_description = description;
-  }
+  void setProgramDescription(const std::string& description);
 
   void parse(int argc, char* argv[]);
 
@@ -111,13 +109,11 @@ class Clapar {
 
   /* Less verbose function to quickly access a flag's state. We do not have to
    * specify the type to parse into as flags are always bool. */
-  bool getFlag(const std::string& flagName) const {
-    return get<bool>(flagName).value_or(false);
-  }
+  bool getFlag(const std::string& flagName) const;
 
   /* Get `argv[0]`, the path and name that the binary was called
    * with. */
-  std::string argv0() const { return m_argv0; }
+  std::string argv0() const;
   /* Print the help text, which automatically includes any help texts that were
    * passed any of the functions to add an option/flag. */
   void printHelp() const;
@@ -125,7 +121,7 @@ class Clapar {
   std::string getHelp() const;
 
   Clapar() = default;
-  Clapar(const std::string& description) : m_description(description) {}
+  Clapar(const std::string& description);
   Clapar(const Clapar&) = delete;
   Clapar(Clapar&&) = delete;
   Clapar& operator=(const Clapar&) = delete;

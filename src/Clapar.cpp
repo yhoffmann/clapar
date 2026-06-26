@@ -124,6 +124,10 @@ void Clapar::addHelpText(const std::string& argName,
   }
 }
 
+void Clapar::setProgramDescription(const std::string& description) {
+  m_description = description;
+}
+
 void Clapar::parse(int argc, char* argv[]) {
   m_argv0 = argv[0];
   const std::vector<std::string> args = [argc, argv, this]() {
@@ -184,6 +188,14 @@ std::string Clapar::getHelp() const {
 
   return oss.str();
 }
+
+Clapar::Clapar(const std::string& description) : m_description(description) {}
+
+bool Clapar::getFlag(const std::string& flagName) const {
+  return get<bool>(flagName).value_or(false);
+}
+
+std::string Clapar::argv0() const { return m_argv0; }
 
 void Clapar::checkAndAdd(Option& option) {
   const Clapar::OptionNamePair::Validity validity =
