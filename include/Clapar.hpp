@@ -21,6 +21,7 @@
 class Clapar {
  public:
   struct OptionNamePair;  // forward definition
+  struct Entry;           // forward definition
 
  public:
   /* Add a flag. This will make `::get<bool>("--name-of-flag")` return true if
@@ -41,6 +42,10 @@ class Clapar {
    * holding two. */
   void addOption(const char* nameShort, const std::type_index type,
                  const std::string& helpText = "");
+
+  /* @brief Add arg to look for from struct `Entry`
+   * @param entry The `Entry` struct containing the settings */
+  void addEntry(const Entry& entry);
 
   /* The vector version of `addOption`, which will do the same thing but look
    * for a vector of arguments like this (with hypothetical option name `--vec`,
@@ -204,6 +209,49 @@ class Clapar {
     static const std::type_index INT;
     static const std::type_index UNSIGNED;
     static const std::type_index CHAR;
+  };
+
+  /* @brief Struct containing config for an argument */
+  struct Entry {
+    /* @brief Whether the entry is a flag or not
+     * @note Setting this to `true` (NOT default) will result in
+     * these other members beging ignored: @see type @see defaultVal @see
+     * delimiter @see addFlag (is `true`) @see addOption (if `false`) */
+    bool isFlag = false;
+    /* @brief The name pair
+     * @note @see addFlag @see addOption */
+    OptionNamePair namePair;
+    /* @brief The type that is supplied
+     * @note @see addOption*/
+    std::type_index type;
+    /* @brief Text to be displayed when `--help` is found
+     * @note @see addFlag */
+    std::string helpText;
+    /* @brief Default val that is stored
+     * @see addFlag */
+    std::any defaultVal{};
+    /* @brief Delimiter for vector option
+     * @note If `isFlag` is `false`, the status of this will determine
+     * whether the program will look for vector options or not: vector options
+     * if set to anything, single option if `std::nullopt` (default) */
+    std::optional<char> delimiter{};
+    /* @brief Function to call when found
+     * @note @see addFunction */
+    std::function<void(void)> function = []() {};
+
+    Entry(
+        const bool isFlag, const OptionNamePair& namePair,
+        const std::type_index type, const std::string& helpText,
+        const std::any defaultVal = {},
+        const std::optional<char> delimiter = std::nullopt,
+        const std::function<void(void)> function = []() {})
+        : isFlag(isFlag)
+        , namePair(namePair)
+        , type(type)
+        , helpText(helpText)
+        , defaultVal(defaultVal)
+        , delimiter(delimiter)
+        , function(function) {};
   };
 
  protected:
