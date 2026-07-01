@@ -328,7 +328,7 @@ class Clapar {
       }
       return std::any(val);
     } else {  // delimiter.has_value() == true
-      TEST_LOG("here with " << passedValue << " " << delimiter.value())
+      TEST_LOG(__FUNCTION__ << passedValue << " " << delimiter.value())
       std::vector<T> vals;
       std::string buf;
       std::istringstream iss(passedValue);
