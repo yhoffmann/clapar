@@ -20,48 +20,48 @@
 
 class Clapar {
  public:
-  struct OptionNamePair;  // forward definition
-  struct Entry;           // forward definition
+  struct EntryNamePair;  // forward definition
+  struct Entry;          // forward definition
 
  public:
   /* Add a flag. This will make `::get<bool>("--name-of-flag")` return true if
    * the flag is found in the command-line arguments, and false otherwise. */
-  void addFlag(const OptionNamePair& namePair,
-               const std::string& helpText = "");
+  void addFlag(const EntryNamePair& namePair, const std::string& helpText = "");
   /* Single-name overload of `addFlag`. */
   void addFlag(const char* nameShort, const std::string& helpText = "");
 
-  /* Add an option to read in data from.
+  /* Add an entry to read in data from.
    * This will look for the names specified in `namePair` (or just the single,
    * short name for the overloaded function) and read in the parameter specified
    * after that argument. `helpText` is an optional variable to pass a text that
    * will be displayed when an argument is `--help`. */
-  void addOption(const OptionNamePair& namePair, const std::type_index type,
+  void addOption(const EntryNamePair& namePair, const std::type_index type,
                  const std::string& helpText = "");
   /* Overloaded function to allow passing a single name instead of the struct
    * holding two. */
   void addOption(const char* nameShort, const std::type_index type,
                  const std::string& helpText = "");
 
-  /* @brief Add arg to look for from struct `Entry`
-   * @param entry The `Entry` struct containing the settings */
-  void addEntry(const Entry& entry);
-
-  /* The vector version of `addOption`, which will do the same thing but look
-   * for a vector of arguments like this (with hypothetical option name `--vec`,
+  /* The vector version of `addEntry`, which will do the same thing but look
+   * for a vector of arguments like this (with hypothetical entry name `--vec`,
    * delimiter `,`, and type float): `--vec 1,2,3`. The delimiter can also be a
    * space, but then the vector arguments need to be passed with quotes around
    * them like this: `--vec '1 2 3'`. Make sure to NOT have 2 delimiters after
    * one another, as this will make the passing fail because it expects a value
    * between delimiters. You can however end with a delimiter (like this
    * `--vec 1,2,` <- notice trailing comma). */
-  void addVectorOption(const OptionNamePair& namePair,
+  void addVectorOption(const EntryNamePair& namePair,
                        const std::type_index type, const char delimiter,
                        const std::string& helpText = "");
   /* Overloaded function to allow passing a single name instead of the struct
    * holding two. */
   void addVectorOption(const char* nameShort, const std::type_index type,
                        const char delimiter, const std::string& helpText = "");
+
+  /* @brief Add arg to look for from struct `Entry`
+   * @param entry The `Entry` struct containing the settings; both @see `Option`
+   * and @see `Flag` inherit from this, so we can pass them both */
+  void addEntry(const Entry& entry);
 
   /* Set a default value for an argument so that it always has a value set if
    * accessed. Side note: Similar behaviour can also be achieved by just writing
@@ -93,17 +93,17 @@ class Clapar {
   void parse(int argc, char* argv[]);
 
   /* Get a `std::optional` that may contain the value passed with the
-   * corresponding option/flag.
+   * corresponding entry/flag.
    * Make sure to get the type correct as this will error out if not. */
   template <typename T>
   std::optional<T> get(const std::string& argName) const {
-    if (m_optionsMap.find(argName) != m_optionsMap.end()) {
-      const Option& option = *m_optionsMap.at(argName);
+    if (m_entriesMap.find(argName) != m_entriesMap.end()) {
+      const EntryInternal& entry = *m_entriesMap.at(argName);
 
-      if (!option.val.has_value()) {
+      if (!entry.val.has_value()) {
         return std::nullopt;
       } else
-        return std::any_cast<T>(option.val);
+        return std::any_cast<T>(entry.val);
     } else
       return std::nullopt;
   }
@@ -123,7 +123,7 @@ class Clapar {
    * with. */
   std::string argv0() const;
   /* Print the help text, which automatically includes any help texts that were
-   * passed any of the functions to add an option/flag. */
+   * passed any of the functions to add an entry/flag. */
   void printHelp() const;
   /* Get the help text that would normally be printed by `printHelp` */
   std::string getHelp() const;
@@ -137,7 +137,7 @@ class Clapar {
   ~Clapar() = default;
 
  protected:
-  struct Option;  // forward definition
+  struct EntryInternal;  // forward definition
   enum StatusCode : int {
     ErrNoNameGiven = 70,
     ErrNameCollision,
@@ -148,8 +148,8 @@ class Clapar {
   void error(StatusCode exitCode, const std::string& msg);
 
  public:
-  // struct that contains the name pair (long & short) for the option
-  struct OptionNamePair {
+  // struct that contains the name pair (long & short) for the entry
+  struct EntryNamePair {
     std::string nameShort;
     std::string nameLong;
 
@@ -172,6 +172,12 @@ class Clapar {
       return (!nameShort.empty() ? nameShort : nameLong);
     }
 
+    EntryNamePair() {};
+    EntryNamePair(const char* const eitherName) : nameLong(eitherName) {}
+    EntryNamePair(const std::string& eitherName) : nameLong(eitherName) {}
+    EntryNamePair(const std::string& nameShort, const std::string& nameLong)
+        : nameShort(nameShort), nameLong(nameLong) {}
+
    private:
     friend class Clapar;
 
@@ -186,8 +192,8 @@ class Clapar {
      * -among other checks, this will make sure that any name at all has been
      * provided. */
     Validity getValidity(
-        const std::vector<std::shared_ptr<Option>>& options) const;
-    bool operator==(const OptionNamePair& other) const {
+        const std::vector<std::shared_ptr<EntryInternal>>& entries) const;
+    bool operator==(const EntryNamePair& other) const {
       return (nameShort == other.nameShort && nameLong == other.nameLong);
     }
     bool contains(const std::string& name) const {
@@ -216,13 +222,13 @@ class Clapar {
     /* @brief Whether the entry is a flag or not
      * @note Setting this to `true` (NOT default) will result in
      * these other members beging ignored: @see type @see defaultVal @see
-     * delimiter @see addFlag (is `true`) @see addOption (if `false`) */
+     * delimiter @see addFlag (is `true`) @see addEntry (if `false`) */
     bool isFlag = false;
     /* @brief The name pair
-     * @note @see addFlag @see addOption */
-    OptionNamePair namePair;
+     * @note @see addFlag @see addEntry */
+    EntryNamePair namePair;
     /* @brief The type that is supplied
-     * @note @see addOption*/
+     * @note @see addEntry*/
     std::type_index type;
     /* @brief Text to be displayed when `--help` is found
      * @note @see addFlag */
@@ -230,17 +236,17 @@ class Clapar {
     /* @brief Default val that is stored
      * @see addFlag */
     std::any defaultVal{};
-    /* @brief Delimiter for vector option
+    /* @brief Delimiter for vector entry
      * @note If `isFlag` is `false`, the status of this will determine
      * whether the program will look for vector options or not: vector options
-     * if set to anything, single option if `std::nullopt` (default) */
+     * if set to anything; single entry if `std::nullopt` (default) */
     std::optional<char> delimiter{};
     /* @brief Function to call when found
      * @note @see addFunction */
     std::function<void(void)> function = []() {};
 
     Entry(
-        const bool isFlag, const OptionNamePair& namePair,
+        const bool isFlag, const EntryNamePair& namePair,
         const std::type_index type, const std::string& helpText,
         const std::any defaultVal = {},
         const std::optional<char> delimiter = std::nullopt,
@@ -252,36 +258,51 @@ class Clapar {
         , defaultVal(defaultVal)
         , delimiter(delimiter)
         , function(function) {};
+
+    static Entry makeFlag(
+        const EntryNamePair& namePair, const std::string& helpText,
+        const std::function<void(void)> function = []() {}) {
+      return Entry(true, namePair, Clapar::Type::BOOL, helpText, bool(false),
+                   std::nullopt, function);
+    }
+    static Entry makeOption(
+        const EntryNamePair& namePair, const std::type_index type,
+        const std::string& helpText = "", const std::any defaultVal = {},
+        const std::optional<char> delimiter = std::nullopt,
+        const std::function<void(void)> function = []() {}) {
+      return Entry(true, namePair, type, helpText, defaultVal, delimiter,
+                   function);
+    }
   };
 
  protected:
-  /* struct containing the config for the command-line option */
-  struct OptionConfig {
+  /* struct containing the config for the command-line entry */
+  struct EntryConfig {
     bool isFlag = false;
 
     struct {
       std::type_index type = typeid(std::string);
       std::optional<const char> delimiter = std::nullopt;
-    } paramOptions;
+    } paramConfig;
   };
 
-  struct Option {
-    OptionNamePair namePair;
-    OptionConfig config;
+  struct EntryInternal {
+    EntryNamePair namePair;
+    EntryConfig config;
     std::string helpText = "";
     /* the variable holding the value that might be passed by command line */
     std::any val;
     /* a function to run when a certain argument is read in;
      * can be lambda because it is a std::function */
     std::function<void(void)> func = []() {};
-    /* if both a long and a short option name are supplied, we would iterate
-     * over the same option 2 times, meaning that the long option could
+    /* if both a long and a short entry name are supplied, we would iterate
+     * over the same entry 2 times, meaning that the long entry could
      * overwrite the short one, or vice versa; this prevents that */
     bool wasProcessed = false;
   };
 
-  std::vector<std::shared_ptr<Option>> m_options;
-  std::unordered_map<std::string, std::shared_ptr<Option>> m_optionsMap;
+  std::vector<std::shared_ptr<EntryInternal>> m_entries;
+  std::unordered_map<std::string, std::shared_ptr<EntryInternal>> m_entriesMap;
   bool m_shouldExitAtUnknownArg = false;
   bool m_shouldExitIfParamIsSameAsAnyArg = false;
   std::string m_argv0;
@@ -290,22 +311,22 @@ class Clapar {
 
   std::ostream* userStream = &std::cerr;
   std::string userExitMsg =
-      "There was a problem converting the following option to its specified "
+      "There was a problem converting the following entry to its specified "
       "type (string in parentheses is the input provided): ";
 
   static constexpr const char* const ERRMSG_NO_NAME_GIVEN =
-      "Clapar error: Only empty flag/option names were provided. Exiting!";
+      "Clapar error: Only empty flag/entry names were provided. Exiting!";
   static constexpr const char* const ERRMSG_NAME_COLLISION_1 =
       "Clapar error: One of these names (\"";
   static constexpr const char* const ERRMSG_NAME_COLLISION_2 =
-      "\") was assigned to multiple options. Exiting!";
+      "\") was assigned to multiple entries. Exiting!";
 
-  void checkAndAdd(Option& option);
+  void checkAndAdd(EntryInternal& entry);
   void processArgs(const std::vector<std::string>& args);
-  void processOption(const std::size_t argIdx,
-                     const std::vector<std::string>& args, Option& option,
-                     bool& isParam);
-  void processFlag(Option& option);
+  void processEntry(const std::size_t argIdx,
+                    const std::vector<std::string>& args, EntryInternal& entry,
+                    bool& isParam);
+  void processFlag(EntryInternal& entry);
 
   static const char* getTypeName(const std::type_index type);
 

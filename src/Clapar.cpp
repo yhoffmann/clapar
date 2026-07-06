@@ -11,12 +11,12 @@ const std::type_index Clapar::Type::INT = typeid(int);
 const std::type_index Clapar::Type::UNSIGNED = typeid(std::size_t);
 const std::type_index Clapar::Type::CHAR = typeid(char);
 
-Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
-    const std::vector<std::shared_ptr<Option>>& options) const {
+Clapar::EntryNamePair::Validity Clapar::EntryNamePair::getValidity(
+    const std::vector<std::shared_ptr<EntryInternal>>& entries) const {
   const bool isNameHelp = nameShort == "--help" || nameLong == "--help";
-  for (const auto& option : options) {
-    const bool doesNameExist = [&option, this]() -> bool {
-      const Clapar::OptionNamePair& otherNamePair = option->namePair;
+  for (const auto& entry : entries) {
+    const bool doesNameExist = [&entry, this]() -> bool {
+      const Clapar::EntryNamePair& otherNamePair = entry->namePair;
       return (otherNamePair.containsIgnoreEmpty(nameShort) ||
               otherNamePair.containsIgnoreEmpty(nameLong));
     }();
@@ -36,9 +36,9 @@ Clapar::OptionNamePair::Validity Clapar::OptionNamePair::getValidity(
   }
 }
 
-void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
+void Clapar::addFlag(const Clapar::EntryNamePair& namePair,
                      const std::string& helpText) {
-  Clapar::Option option = {
+  Clapar::EntryInternal entry = {
       namePair,
       {
           true,
@@ -48,17 +48,17 @@ void Clapar::addFlag(const Clapar::OptionNamePair& namePair,
       std::any(),
   };
 
-  checkAndAdd(option);
+  checkAndAdd(entry);
 }
 
 void Clapar::addFlag(const char* nameShort, const std::string& helpText) {
   addFlag({nameShort, ""}, helpText);
 }
 
-void Clapar::addOption(const Clapar::OptionNamePair& namePair,
+void Clapar::addOption(const Clapar::EntryNamePair& namePair,
                        const std::type_index type,
                        const std::string& helpText) {
-  Clapar::Option option = {
+  Clapar::EntryInternal entry = {
       namePair,
       {
           false,
@@ -68,7 +68,7 @@ void Clapar::addOption(const Clapar::OptionNamePair& namePair,
       std::any(),
   };
 
-  checkAndAdd(option);
+  checkAndAdd(entry);
 }
 
 void Clapar::addOption(const char* nameShort, const std::type_index type,
@@ -76,10 +76,10 @@ void Clapar::addOption(const char* nameShort, const std::type_index type,
   addOption({nameShort, ""}, type, helpText);
 }
 
-void Clapar::addVectorOption(const OptionNamePair& namePair,
+void Clapar::addVectorOption(const EntryNamePair& namePair,
                              const std::type_index type, const char delimiter,
                              const std::string& helpText) {
-  Clapar::Option option = {
+  Clapar::EntryInternal entry = {
       namePair,
       {
           false,
@@ -89,7 +89,7 @@ void Clapar::addVectorOption(const OptionNamePair& namePair,
       std::any(),
   };
 
-  checkAndAdd(option);
+  checkAndAdd(entry);
 }
 
 void Clapar::addVectorOption(const char* nameShort, const std::type_index type,
@@ -99,7 +99,7 @@ void Clapar::addVectorOption(const char* nameShort, const std::type_index type,
 }
 
 void Clapar::addEntry(const Entry& entry) {
-  Clapar::Option option = {
+  Clapar::EntryInternal entryInternal = {
       entry.namePair,
       {
           entry.isFlag,
@@ -109,35 +109,35 @@ void Clapar::addEntry(const Entry& entry) {
       entry.helpText,
       entry.isFlag ? std::any{true} : std::any{entry.defaultVal},
   };
-  checkAndAdd(option);
+  checkAndAdd(entryInternal);
 
   addFunction(entry.namePair.string(), entry.function);
 }
 
 void Clapar::setDefault(const std::string& argName, const std::any defaultVal) {
-  m_optionsMap[argName]->val = defaultVal;
+  m_entriesMap[argName]->val = defaultVal;
 }
 
 void Clapar::addFunction(const std::string& argName,
                          const std::function<void(void)> func) {
-  if (m_optionsMap.find(argName) != m_optionsMap.end()) {
-    Option& option = *m_optionsMap[argName];
-    option.func = func;
+  if (m_entriesMap.find(argName) != m_entriesMap.end()) {
+    EntryInternal& entry = *m_entriesMap[argName];
+    entry.func = func;
   } else {
     error(ErrNoSuchArgument,
-          "Tried assigning function to option \"" + argName +
-              "\", but no option with the name exists. Exiting!");
+          "Tried assigning function to entry \"" + argName +
+              "\", but no entry with the name exists. Exiting!");
   }
 }
 
 void Clapar::addHelpText(const std::string& argName,
                          const std::string& helpText) {
-  if (m_optionsMap.find(argName) != m_optionsMap.end()) {
-    m_optionsMap[argName]->helpText = helpText;
+  if (m_entriesMap.find(argName) != m_entriesMap.end()) {
+    m_entriesMap[argName]->helpText = helpText;
   } else {
     error(ErrNoSuchArgument,
-          "Tried assigning help text to option \"" + argName +
-              "\", but no option with that names exists. Exiting!");
+          "Tried assigning help text to entry \"" + argName +
+              "\", but no entry with that names exists. Exiting!");
   }
 }
 
@@ -174,10 +174,10 @@ void Clapar::parse(int argc, char* argv[]) {
 void Clapar::printHelp() const { std::cout << getHelp(); }
 
 std::string Clapar::getHelp() const {
-  std::vector<std::shared_ptr<Option>> optionsTemp(m_options);
-  std::sort(optionsTemp.begin(), optionsTemp.end(),
-            [](const std::shared_ptr<Option> left,
-               const std::shared_ptr<Option> right) -> bool {
+  std::vector<std::shared_ptr<EntryInternal>> entriesTemp(m_entries);
+  std::sort(entriesTemp.begin(), entriesTemp.end(),
+            [](const std::shared_ptr<EntryInternal> left,
+               const std::shared_ptr<EntryInternal> right) -> bool {
               const std::string& leftComparator =
                   ("" != left->namePair.nameLong) ? left->namePair.nameLong
                                                   : left->namePair.nameShort;
@@ -191,23 +191,23 @@ std::string Clapar::getHelp() const {
   std::ostringstream oss;
 
   oss << m_argv0 << ": " << m_description << "\n";
-  for (const auto& optionPtr : optionsTemp) {
-    const bool isShortEmpty = optionPtr->namePair.nameShort.empty();
-    const bool isLongEmpty = optionPtr->namePair.nameLong.empty();
-    const bool isOptionNameTextEmpty = optionPtr->helpText.empty();
-    const bool isLastEntry = &optionPtr == &optionsTemp.back() && optionPtr;
-    const std::string type = getTypeName(optionPtr->config.paramOptions.type);
+  for (const auto& entryPtr : entriesTemp) {
+    const bool isShortEmpty = entryPtr->namePair.nameShort.empty();
+    const bool isLongEmpty = entryPtr->namePair.nameLong.empty();
+    const bool isentryNameTextEmpty = entryPtr->helpText.empty();
+    const bool isLastEntry = &entryPtr == &entriesTemp.back() && entryPtr;
+    const std::string type = getTypeName(entryPtr->config.paramConfig.type);
 
-    oss << setBold << "  " << (!isLongEmpty ? optionPtr->namePair.nameLong : "")
+    oss << setBold << "  " << (!isLongEmpty ? entryPtr->namePair.nameLong : "")
         << unsetBold << (isShortEmpty || isLongEmpty ? "" : ", ") << setBold
-        << (!isShortEmpty ? optionPtr->namePair.nameShort : "") << unsetBold
-        << (!optionPtr->config.isFlag
+        << (!isShortEmpty ? entryPtr->namePair.nameShort : "") << unsetBold
+        << (!entryPtr->config.isFlag
                 ? " <" + type +
-                      (optionPtr->config.paramOptions.delimiter.has_value()
+                      (entryPtr->config.paramConfig.delimiter.has_value()
                            ? ",...>"
                            : ">")
                 : "")
-        << (isOptionNameTextEmpty ? "" : ":\n\t" + optionPtr->helpText)
+        << (isentryNameTextEmpty ? "" : ":\n\t" + entryPtr->helpText)
         << (!isLastEntry ? "\n" : "");
   }
 
@@ -222,37 +222,37 @@ bool Clapar::getFlag(const std::string& flagName) const {
 
 std::string Clapar::argv0() const { return m_argv0; }
 
-void Clapar::checkAndAdd(Option& option) {
-  const Clapar::OptionNamePair::Validity validity =
-      option.namePair.getValidity(m_options);
+void Clapar::checkAndAdd(EntryInternal& entry) {
+  const Clapar::EntryNamePair::Validity validity =
+      entry.namePair.getValidity(m_entries);
 
-  m_options.push_back(std::make_shared<Option>(option));
-  std::shared_ptr<Option> optionPtr = m_options.back();
+  m_entries.push_back(std::make_shared<EntryInternal>(entry));
+  std::shared_ptr<EntryInternal> entryPtr = m_entries.back();
 
-  std::string& nameShort = optionPtr->namePair.nameShort;
-  std::string& nameLong = optionPtr->namePair.nameLong;
+  std::string& nameShort = entryPtr->namePair.nameShort;
+  std::string& nameLong = entryPtr->namePair.nameLong;
   switch (validity) {
-    case OptionNamePair::SGiven:
-      m_optionsMap[nameShort] = optionPtr;
+    case EntryNamePair::SGiven:
+      m_entriesMap[nameShort] = entryPtr;
       break;
 
-    case OptionNamePair::BothGiven:
-      m_optionsMap[nameShort] = optionPtr;
-      m_optionsMap[nameLong] = optionPtr;
+    case EntryNamePair::BothGiven:
+      m_entriesMap[nameShort] = entryPtr;
+      m_entriesMap[nameLong] = entryPtr;
       break;
 
-    case OptionNamePair::LGiven:
-      m_optionsMap[nameLong] = optionPtr;
+    case EntryNamePair::LGiven:
+      m_entriesMap[nameLong] = entryPtr;
       break;
 
-    case OptionNamePair::NoneGiven:
+    case EntryNamePair::NoneGiven:
       error(ErrNoNameGiven, ERRMSG_NO_NAME_GIVEN);
       break;
 
-    case OptionNamePair::CollisionWithOther:
+    case EntryNamePair::CollisionWithOther:
       error(ErrNameCollision, ERRMSG_NAME_COLLISION_1 +
-                                  optionPtr->namePair.nameShort + "\" or \"" +
-                                  optionPtr->namePair.nameLong +
+                                  entryPtr->namePair.nameShort + "\" or \"" +
+                                  entryPtr->namePair.nameLong +
                                   ERRMSG_NAME_COLLISION_2);
       break;
   }
@@ -274,19 +274,19 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
     if (m_shouldExitAtUnknownArg &&
         processedArgs.find(arg) != processedArgs.end())
       error(ErrWrongUsage,
-            "Found option \"" + arg +
+            "Found entry \"" + arg +
                 "\" twice and program is setup to exit if args show up "
                 "twice. Exiting!");
 
     bool isArgKnown = false;
-    for (auto& [argNameToCheck, option] : m_optionsMap) {
-      if (m_shouldExitAtUnknownArg && option->wasProcessed) continue;
+    for (auto& [argNameToCheck, entry] : m_entriesMap) {
+      if (m_shouldExitAtUnknownArg && entry->wasProcessed) continue;
 
       if (arg == argNameToCheck) {
-        processOption(argIdx, args, *option, isParam);
-        option->wasProcessed = true;
-        processedArgs.insert(option->namePair.nameShort);
-        processedArgs.insert(option->namePair.nameLong);
+        processEntry(argIdx, args, *entry, isParam);
+        entry->wasProcessed = true;
+        processedArgs.insert(entry->namePair.nameShort);
+        processedArgs.insert(entry->namePair.nameLong);
         isArgKnown = true;
       }
     }
@@ -299,20 +299,20 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
   }
 }
 
-void Clapar::processFlag(Option& option) {
-  option.val = std::any(true);
-  option.func();
+void Clapar::processFlag(EntryInternal& entry) {
+  entry.val = std::any(true);
+  entry.func();
 }
 
-void Clapar::processOption(const std::size_t argIdx,
-                           const std::vector<std::string>& args, Option& option,
-                           bool& isParam) {
-  if (option.config.isFlag)
-    return processFlag(option);
+void Clapar::processEntry(const std::size_t argIdx,
+                          const std::vector<std::string>& args,
+                          EntryInternal& entry, bool& isParam) {
+  if (entry.config.isFlag)
+    return processFlag(entry);
   else {
     const bool hasNoValue = argIdx + 1 >= args.size();
     if (hasNoValue)
-      error(ErrWrongUsage, "Wrong usage: option " + option.namePair.string() +
+      error(ErrWrongUsage, "Wrong usage: entry " + entry.namePair.string() +
                                " needs a passed value but has none. Exiting!");
   }
   isParam = true;
@@ -320,34 +320,34 @@ void Clapar::processOption(const std::size_t argIdx,
   const std::string& passedValue = args[argIdx + 1];
 
   if (m_shouldExitIfParamIsSameAsAnyArg &&
-      m_optionsMap.find(passedValue) != m_optionsMap.end()) {
-    error(ErrWrongUsage, "Passed the name of option \"" + passedValue +
-                             "\" as a parameter to another option. This is "
+      m_entriesMap.find(passedValue) != m_entriesMap.end()) {
+    error(ErrWrongUsage, "Passed the name of entry \"" + passedValue +
+                             "\" as a parameter to another entry. This is "
                              "probably not what you want. Exiting!");
   }
 
-  std::optional<const char> delimiter = option.config.paramOptions.delimiter;
-  const std::type_index type = option.config.paramOptions.type;
+  std::optional<const char> delimiter = entry.config.paramConfig.delimiter;
+  const std::type_index type = entry.config.paramConfig.type;
   if (type == Type::STRING) {
-    option.val = convertToAny<std::string>(passedValue, delimiter);
+    entry.val = convertToAny<std::string>(passedValue, delimiter);
   } else if (type == Type::BOOL) {
-    option.val = convertToAny<bool>(passedValue, delimiter);
+    entry.val = convertToAny<bool>(passedValue, delimiter);
   } else if (type == Type::FLOAT) {
-    option.val = convertToAny<float>(passedValue, delimiter);
+    entry.val = convertToAny<float>(passedValue, delimiter);
   } else if (type == Type::DOUBLE) {
-    option.val = convertToAny<double>(passedValue, delimiter);
+    entry.val = convertToAny<double>(passedValue, delimiter);
   } else if (type == Type::INT) {
-    option.val = convertToAny<int>(passedValue, delimiter);
+    entry.val = convertToAny<int>(passedValue, delimiter);
   } else if (type == Type::UNSIGNED) {
-    option.val = convertToAny<std::size_t>(passedValue, delimiter);
+    entry.val = convertToAny<std::size_t>(passedValue, delimiter);
   } else if (type == Type::CHAR) {
-    option.val = convertToAny<char>(passedValue, delimiter);
+    entry.val = convertToAny<char>(passedValue, delimiter);
   } else {
     std::cerr << "Clapar warning: Could not convert passed value ("
               << passedValue << ") to std::any." << std::endl;
   }
 
-  option.func();
+  entry.func();
 }
 
 const char* Clapar::getTypeName(const std::type_index type) {
