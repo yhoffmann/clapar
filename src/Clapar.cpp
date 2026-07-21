@@ -153,7 +153,7 @@ void Clapar::shouldExitIfParamIsSameAsAnyArg(const bool b) {
   m_shouldExitIfParamIsSameAsAnyArg = b;
 }
 
-void Clapar::parse(int argc, char* argv[]) {
+void Clapar::parse(const int argc, const char* const argv[]) {
   m_argv0 = argv[0];
   const std::vector<std::string> args = [argc, argv, this]() {
     std::vector<std::string> temp;

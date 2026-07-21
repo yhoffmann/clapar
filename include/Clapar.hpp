@@ -90,7 +90,7 @@ class Clapar {
   void shouldExitAtUnknownArg(const bool b = true);
   void shouldExitIfParamIsSameAsAnyArg(const bool b = true);
 
-  void parse(int argc, char* argv[]);
+  void parse(const int argc, const char* const argv[]);
 
   /* Get a `std::optional` that may contain the value passed with the
    * corresponding entry/flag.
