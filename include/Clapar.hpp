@@ -270,7 +270,7 @@ class Clapar {
         const std::string& helpText = "", const std::any defaultVal = {},
         const std::optional<char> delimiter = std::nullopt,
         const std::function<void(void)> function = []() {}) {
-      return Entry(true, namePair, type, helpText, defaultVal, delimiter,
+      return Entry(false, namePair, type, helpText, defaultVal, delimiter,
                    function);
     }
   };
