@@ -3,14 +3,6 @@
 #include <algorithm>
 #include <set>
 
-const std::type_index Clapar::Type::BOOL = typeid(bool);
-const std::type_index Clapar::Type::STRING = typeid(std::string);
-const std::type_index Clapar::Type::FLOAT = typeid(float);
-const std::type_index Clapar::Type::DOUBLE = typeid(double);
-const std::type_index Clapar::Type::INT = typeid(int);
-const std::type_index Clapar::Type::UNSIGNED = typeid(std::size_t);
-const std::type_index Clapar::Type::CHAR = typeid(char);
-
 Clapar::EntryNamePair::Validity Clapar::EntryNamePair::getValidity(
     const std::vector<std::shared_ptr<EntryInternal>>& entries) const {
   const bool isNameHelp = nameShort == "--help" || nameLong == "--help";

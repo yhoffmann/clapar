@@ -208,13 +208,13 @@ class Clapar {
   /* struct containing the possible types to convert the arguments to options
    * into */
   struct Type {
-    static const std::type_index BOOL;
-    static const std::type_index STRING;
-    static const std::type_index FLOAT;
-    static const std::type_index DOUBLE;
-    static const std::type_index INT;
-    static const std::type_index UNSIGNED;
-    static const std::type_index CHAR;
+    inline static const std::type_index BOOL = typeid(bool);
+    inline static const std::type_index STRING = typeid(std::string);
+    inline static const std::type_index FLOAT = typeid(float);
+    inline static const std::type_index DOUBLE = typeid(double);
+    inline static const std::type_index INT = typeid(int);
+    inline static const std::type_index UNSIGNED = typeid(std::size_t);
+    inline static const std::type_index CHAR = typeid(char);
   };
 
   /* @brief Struct containing config for an argument */
