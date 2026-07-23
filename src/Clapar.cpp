@@ -195,7 +195,7 @@ std::string Clapar::getHelp() const {
     const bool isShortEmpty = entryPtr->namePair.nameShort.empty();
     const bool isLongEmpty = entryPtr->namePair.nameLong.empty();
     const bool isentryNameTextEmpty = entryPtr->helpText.empty();
-    const bool isLastEntry = &entryPtr == &entriesTemp.back() && entryPtr;
+    const bool isLastEntry = entryPtr.get() == entriesTemp.back().get();
     const std::string type = getTypeName(entryPtr->config.paramConfig.type);
 
     oss << setBold << "  " << (!isLongEmpty ? entryPtr->namePair.nameLong : "")
