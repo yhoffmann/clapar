@@ -107,7 +107,9 @@ void Clapar::addEntry(const Entry& entry) {
 }
 
 void Clapar::setDefault(const std::string& argName, const std::any defaultVal) {
-  m_entriesMap[argName]->val = defaultVal;
+  auto entry = m_entriesMap[argName];
+  entry->val = defaultVal;
+  entry->isDefault = true;
 }
 
 void Clapar::addFunction(const std::string& argName,
@@ -293,6 +295,7 @@ void Clapar::processArgs(const std::vector<std::string>& args) {
 
 void Clapar::processFlag(EntryInternal& entry) {
   entry.val = std::any(true);
+  entry.isDefault = false;
   entry.func();
 }
 
@@ -339,6 +342,7 @@ void Clapar::processEntry(const std::size_t argIdx,
               << passedValue << ") to std::any." << std::endl;
   }
 
+  entry.isDefault = false;
   entry.func();
 }
 

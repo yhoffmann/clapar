@@ -108,6 +108,54 @@ class Clapar {
       return std::nullopt;
   }
 
+  /** @anchor tryAssignOrDefault
+   * @brief Assign value if the argument named by `name` is set in the instance
+   * (will also assign from default value if this was set)
+   *
+   * @param T The type of the value (is automatically deduced from the assignee)
+   * @param [out] assignee The variable to change (if value is set)
+   * @param [in] The identifier of the argument
+   *
+   * @returns `true` if value was assigned, `false` otherwise
+   *
+   * @details Can also be used on vector options. Just make `assignee` have type
+   * `std::vector<T>` in that case.
+   */
+  template <typename T>
+  bool tryAssignOrDefault(T& assignee,
+                          const Clapar::EntryNamePair& name) const {
+    const bool shouldAssign = m_entriesMap.find(name) != m_entriesMap.end() &&
+                              get<T>(name).has_value();
+
+    if (shouldAssign) assignee = get<T>(name).value();
+
+    return shouldAssign;
+  }
+
+  /**
+   * @brief Change value if the argument named by `name` is set in the instance
+   * (will NOT assign from default value; use @ref tryAssignOrDefault for that)
+   *
+   * @param T The type of the value (is automatically deduced from the assignee)
+   * @param [out] assignee The variable to change (if value is set)
+   * @param [in] name The identifier of the argument
+   *
+   * @returns `true` if value was assigned, `false` otherwise
+   *
+   * @details Can also be used on vector options. Just make `assignee` have type
+   * `std::vector<T>` in that case.
+   */
+  template <typename T>
+  bool tryAssign(T& assignee, const Clapar::EntryNamePair& name) const {
+    const bool shouldAssign = m_entriesMap.find(name) != m_entriesMap.end() &&
+                              get<T>(name).has_value() &&
+                              !m_entriesMap.at(name)->isDefault;
+
+    if (shouldAssign) assignee = get<T>(name).value();
+
+    return shouldAssign;
+  }
+
   /* Function to get a `std::optional` with the vector containing vector
    * arguments. Will obviously error out if called on non-vector arguments. */
   template <typename T>
@@ -299,6 +347,7 @@ class Clapar {
      * over the same entry 2 times, meaning that the long entry could
      * overwrite the short one, or vice versa; this prevents that */
     bool wasProcessed = false;
+    bool isDefault = false;
   };
 
   std::vector<std::shared_ptr<EntryInternal>> m_entries;
