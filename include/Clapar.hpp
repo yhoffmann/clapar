@@ -92,80 +92,142 @@ class Clapar {
 
   void parse(const int argc, const char* const argv[]);
 
-  /* Get a `std::optional` that may contain the value passed with the
-   * corresponding entry/flag.
-   * Make sure to get the type correct as this will error out if not. */
-  template <typename T>
-  std::optional<T> get(const std::string& argName) const {
-    if (m_entriesMap.find(argName) != m_entriesMap.end()) {
-      const EntryInternal& entry = *m_entriesMap.at(argName);
-
-      if (!entry.val.has_value()) {
-        return std::nullopt;
-      } else
-        return std::any_cast<T>(entry.val);
-    } else
-      return std::nullopt;
+  /*
+   * @brief Check whether an argument with that name was added
+   *
+   * @param argName The indentifier of the argument
+   *
+   * @returns `true` if the argument exists, `false` otherwise
+   */
+  bool hasArg(const EntryNamePair& argName) const noexcept {
+    return m_entriesMap.find(argName) != m_entriesMap.end();
   }
 
-  /** @anchor tryAssignOrDefault
-   * @brief Assign value if the argument named by `name` is set in the instance
-   * (will also assign from default value if this was set)
+  /*
+   * @brief Check if value for an argument is set
    *
-   * @param T The type of the value (is automatically deduced from the assignee)
-   * @param [out] assignee The variable to change (if value is set)
-   * @param [in] The identifier of the argument
+   * @param argName The identifier of the argument
    *
-   * @returns `true` if value was assigned, `false` otherwise
-   *
-   * @details Can also be used on vector options. Just make `assignee` have type
-   * `std::vector<T>` in that case.
+   * @returns `true` if the argument exists and holds a value, `false` otherwise
    */
-  template <typename T>
-  bool tryAssignOrDefault(T& assignee,
-                          const Clapar::EntryNamePair& name) const {
-    const bool shouldAssign = m_entriesMap.find(name) != m_entriesMap.end() &&
-                              get<T>(name).has_value();
-
-    if (shouldAssign) assignee = get<T>(name).value();
-
-    return shouldAssign;
+  bool hasValue(const EntryNamePair& argName) const noexcept {
+    return m_entriesMap.find(argName) != m_entriesMap.end() &&
+           m_entriesMap.at(argName)->val.has_value();
   }
 
   /**
-   * @brief Change value if the argument named by `name` is set in the instance
-   * (will NOT assign from default value; use @ref tryAssignOrDefault for that)
+   * @brief Get a value
    *
-   * @param T The type of the value (is automatically deduced from the assignee)
-   * @param [out] assignee The variable to change (if value is set)
-   * @param [in] name The identifier of the argument
+   * @param T Type of the value to get.
+   * @param argName Name of the argument to
    *
-   * @returns `true` if value was assigned, `false` otherwise
+   * @returns `std::optional<T>`, which contains the value
    *
-   * @details Can also be used on vector options. Just make `assignee` have type
-   * `std::vector<T>` in that case.
+   * @details Will return a `std::optional<T>` holding the value of an argument
+   * with name `argName` if it exists and has the value set.
    */
   template <typename T>
-  bool tryAssign(T& assignee, const Clapar::EntryNamePair& name) const {
-    const bool shouldAssign = m_entriesMap.find(name) != m_entriesMap.end() &&
-                              get<T>(name).has_value() &&
-                              !m_entriesMap.at(name)->isDefault;
+  std::optional<T> get(const std::string& argName) const noexcept {
+    if (hasArg(argName))
+      if (const auto ptr = std::any_cast<T>(&m_entriesMap.at(argName)->val))
+        return *ptr;
 
-    if (shouldAssign) assignee = get<T>(name).value();
-
-    return shouldAssign;
+    return std::nullopt;
   }
 
   /* Function to get a `std::optional` with the vector containing vector
    * arguments. Will obviously error out if called on non-vector arguments. */
   template <typename T>
-  std::optional<std::vector<T>> getVector(const std::string& argName) const {
+  std::optional<std::vector<T>> getVector(
+      const std::string& argName) const noexcept {
     return get<std::vector<T>>(argName);
   }
 
   /* Less verbose function to quickly access a flag's state. We do not have to
    * specify the type to parse into as flags are always bool. */
   bool getFlag(const std::string& flagName) const;
+
+  /** @anchor tryAssignOrDefault
+   * @brief Assign value if the argument named by `name` is set in the instance
+   * (will also assign from default value if this was set)
+   *
+   * @param TAssignee The type of the assigne (can be automatically deduced)
+   * @param TValue The type of the internal value (as set by `Clapar::Type`
+   * during adding of the argument). Useful to set if trying to case, see code
+   * example below.
+   * @param [out] assignee The variable to change (if value is set)
+   * @param [in] argName The identifier of the argument
+   *
+   * @returns `true` if value was assigned, `false` otherwise
+   *
+   * @details Can also be used on vector options. Just make `assignee` have type
+   * `std::vector<TValue>` in that case.
+   *
+   * @code
+   *   Clapar args;
+   *   args.addOption("--num", Clapar::Type::FLOAT);
+   *   args.parse(argc, argv);
+   *
+   *   float f;
+   *   if (args.tryAssign(f, "--num"))
+   *     std::cout << "assigned to f\n";
+   *   // is the same as
+   *   args.tryAssign<float>(f, "--num");
+   *   // and
+   *   args.tryAssign<float, float>(f, "--num");
+   *
+   *   // a different type that can be cast
+   *   double d;
+   *   args.tryAssign<double, float>(d, "--num");
+   *
+   *   // also allows for more complicated casts
+   *   std::filesystem::path p;
+   *   args.tryAssign<std::filesystem::path, std::string>(p, "--dir-output");
+   * @endcode
+   */
+  template <typename TAssignee, typename TValue = TAssignee>
+  bool tryAssignOrDefault(TAssignee& assignee,
+                          const Clapar::EntryNamePair& argName) const noexcept {
+    if (hasArg(argName))
+      if (const auto ptr =
+              std::any_cast<TValue>(&m_entriesMap.at(argName)->val)) {
+        assignee = *ptr;
+
+        return true;
+      }
+
+    return false;
+  }
+
+  /**
+   * @brief Change value if the argument named by `name` is set in the instance
+   * (will NOT assign from default value; use @ref tryAssignOrDefault for that)
+   *
+   * @param TAssignee The type of the assigne (can be automatically deduced)
+   * @param TValue The type of the internal value (as set by `Clapar::Type`
+   * during adding of the argument). Useful to set if trying to case, see code
+   * example in @see tryAssignOrDefault.
+   * @param [out] assignee The variable to change (if value is set)
+   * @param [in] argName The identifier of the argument
+   *
+   * @returns `true` if value was assigned, `false` otherwise
+   *
+   * @details Can also be used on vector options. Just make `assignee` have type
+   * `std::vector<TValue>` in that case.
+   */
+  template <typename TAssignee, typename TValue = TAssignee>
+  bool tryAssign(TAssignee& assignee,
+                 const Clapar::EntryNamePair& argName) const noexcept {
+    if (hasArg(argName) && !m_entriesMap.at(argName)->isDefault)
+      if (const auto ptr =
+              std::any_cast<TValue>(&m_entriesMap.at(argName)->val)) {
+        assignee = *ptr;
+
+        return true;
+      }
+
+    return false;
+  }
 
   /* Get `argv[0]`, the path and name that the binary was called
    * with. */
