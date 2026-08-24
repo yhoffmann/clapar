@@ -99,7 +99,7 @@ void Clapar::addEntry(const Entry& entry) {
 
       },
       entry.helpText,
-      entry.isFlag ? std::any{true} : std::any{entry.defaultVal},
+      entry.isFlag ? std::any() : std::any{entry.defaultVal},
   };
   checkAndAdd(entryInternal);
 
