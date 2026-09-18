@@ -383,6 +383,14 @@ class Clapar {
       return Entry(false, namePair, type, helpText, defaultVal, delimiter,
                    function);
     }
+    static Entry makeVectorOption(
+        const EntryNamePair& namePair, const std::type_index type,
+        const std::string& helpText = "", const std::any defaultVal = {},
+        const std::optional<char> delimiter = ',',
+        const std::function<void(void)> function = []() {}) {
+      return Entry(false, namePair, type, helpText, defaultVal, delimiter,
+                   function);
+    }
   };
 
  protected:
